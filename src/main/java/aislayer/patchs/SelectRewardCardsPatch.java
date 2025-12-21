@@ -21,7 +21,8 @@ public class SelectRewardCardsPatch {
         if (isAIStart()) {
             String todo = rItem.text+ "(可以不选)" + ": " + rItem.cards;
             allCards.addAll(rItem.cards);
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // AIUtils.action(getInfo(todo));
         }
     }
 }

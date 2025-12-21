@@ -69,9 +69,10 @@ public class EnterRoomPatch {
                     logger.info("当前房间: {}({})", roomName, roomNode);
                     break;
             }
-            if (!todo.isEmpty()) {
-                AIUtils.action(getInfo(todo));
-            }
+            // 禁用AI自动操作，只保留解说功能
+            // if (!todo.isEmpty()) {
+            //     AIUtils.action(getInfo(todo));
+            // }
         }
     }
 

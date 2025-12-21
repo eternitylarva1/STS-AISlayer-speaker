@@ -31,8 +31,9 @@ public class SelectRoomPatch {
                 ArrayList<ArrayList<MapRoomNode>> mapPaths = getMapPaths(AbstractDungeon.getCurrMapNode());
 
                 logger.info("当前房间: {}", AbstractDungeon.getCurrMapNode());
-                String todo = "从以下给出的若干路线中选择一条接下来你要走的路线(如果只有一条那就选那唯一的一条): " + mapPathsToString(mapPaths);
-                AIUtils.action(getInfo(todo));
+                // 禁用AI自动操作，只保留解说功能
+                // String todo = "从以下给出的若干路线中选择一条接下来你要走的路线(如果只有一条那就选那唯一的一条): " + mapPathsToString(mapPaths);
+                // AIUtils.action(getInfo(todo));
             }
         }
     }

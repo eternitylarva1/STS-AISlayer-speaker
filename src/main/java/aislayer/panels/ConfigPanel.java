@@ -38,6 +38,7 @@ public class ConfigPanel extends EasyConfigPanel {
     public static int commentaryFrequency = 1;
     public static String commentaryStyle = "幽默";
     public static boolean showCommentaryHistory = false;
+    public static int commentaryTimeout = 3; // API调用超时时间（秒）
 
     public ConfigPanel() {
         super("aislayer", getUIStrings(), "config");

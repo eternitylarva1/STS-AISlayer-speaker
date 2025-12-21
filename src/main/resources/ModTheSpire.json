@@ -4,6 +4,6 @@
   "author_list": ["河童"],
   "description": "让AI来解说你的爬塔过程！",
   "dependencies": ["basemod"],
-  "version": "0.3.1",
+  "version": "0.3.3",
   "sts_version": "06-3-2025"
 }

@@ -18,7 +18,8 @@ public class SelectBossRelicPatch {
         if (isAIStart()) {
             String todo = "选择一个遗物(可以不选): " + AbstractDungeon.bossRelicScreen.relics;
             allRelics.addAll(AbstractDungeon.bossRelicScreen.relics);
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // AIUtils.action(getInfo(todo));
         }
     }
 }

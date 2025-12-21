@@ -37,8 +37,9 @@ public class SelectRewardPatch {
                         break;
                 }
             }
-            String todo = "用select选择任意奖励(可以全选或者不选，建议都选上): " + todoArray;
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // String todo = "用select选择任意奖励(可以全选或者不选，建议都选上): " + todoArray;
+            // AIUtils.action(getInfo(todo));
         }
     }
 

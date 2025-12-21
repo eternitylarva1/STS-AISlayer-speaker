@@ -24,7 +24,8 @@ public class SelectHandCardsPatch {
     private static void patch(int numCardsToSelect, boolean anyNumber, String selectionReason) {
         if (isAIStart()) {
             String todo = getMessage(numCardsToSelect, anyNumber, selectionReason) + ": " + AbstractDungeon.player.hand.group;
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // AIUtils.action(getInfo(todo));
         }
     }
 

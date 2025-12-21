@@ -31,7 +31,8 @@ public class SelectOtherCardsPatch {
         if (isAIStart()) {
             String todo = tipMsg.replace("。", "") + ": " + group.group;
             allCards.addAll(group.group);
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // AIUtils.action(getInfo(todo));
         }
     }
 }

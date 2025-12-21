@@ -40,8 +40,9 @@ public class PlayFirstCardPatch {
             String thinking = text.getString((int) (Math.random() * text.length()));
             AbstractDungeon.actionManager.addToBottom(new TalkAction(true, thinking, 4.0F, 4.0F));
 
-            String todo = "现在你可以选择使用药水、打出手牌、结束回合";
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // String todo = "现在你可以选择使用药水、打出手牌、结束回合";
+            // AIUtils.action(getInfo(todo));
 
         }
     }

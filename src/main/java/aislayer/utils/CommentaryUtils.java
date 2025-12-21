@@ -2,8 +2,8 @@ package aislayer.utils;
 
 import aislayer.AISlayer;
 import aislayer.panels.ConfigPanel;
-import com.megacrit.cardcrawl.actions.animations.TalkAction;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.vfx.SpeechBubble;
 import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -139,13 +139,21 @@ public class CommentaryUtils {
         
         String commentary = commentaryQueue.get(0);
         
-        // 在游戏主线程中显示
-        AbstractDungeon.actionManager.addToBottom(new TalkAction(true, commentary, 3.0F, 3.0F));
+        // 直接使用SpeechBubble Effect（不使用Action）
+        if (AbstractDungeon.player != null) {
+            AbstractDungeon.effectList.add(new SpeechBubble(
+                AbstractDungeon.player.dialogX,
+                AbstractDungeon.player.dialogY,
+                3.0f, // 显示时长3秒
+                commentary,
+                true // 是玩家
+            ));
+        }
         
         // 延迟移除已显示的解说
         Thread thread = new Thread(() -> {
             try {
-                Thread.sleep(4000); // 等待4秒
+                Thread.sleep(3500); // 等待3.5秒（比Effect稍长一点）
                 if (!commentaryQueue.isEmpty()) {
                     commentaryQueue.remove(0);
                     // 显示下一条

@@ -50,8 +50,9 @@ public class SelectCampfirePatch {
         if (isAIStart()) {
             try {
                 ArrayList<String> Campfire = getCampfire(__instance);
-                String todo = "用select选择一个火堆行为: " + Campfire;
-                AIUtils.action(getInfo(todo));
+                // 禁用AI自动操作，只保留解说功能
+                // String todo = "用select选择一个火堆行为: " + Campfire;
+                // AIUtils.action(getInfo(todo));
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error("获取CampfireUI按钮失败", e);
             }

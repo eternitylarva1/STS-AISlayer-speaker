@@ -3,6 +3,7 @@ package aislayer.patchs;
 import aislayer.utils.CommentaryUtils;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePatch;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePostfixPatch;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.core.AbstractCreature;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
@@ -10,30 +11,34 @@ import com.megacrit.cardcrawl.rooms.AbstractRoom;
 
 /**
  * 监听玩家用药水行动的Patch
+ * 监听AbstractPlayer.removePotion方法，这是药水使用的关键步骤
  */
 @SpirePatch(
-        clz = AbstractPotion.class,
-        method = "use",
-        paramtypez = {AbstractCreature.class},
+        clz = AbstractPlayer.class,
+        method = "removePotion",
+        paramtypez = {AbstractPotion.class},
         optional = true
 )
 public class PlayerPotionPatch {
 
     @SpirePostfixPatch
-    public static void Postfix(AbstractPotion __instance, AbstractCreature target) {
+    public static void Postfix(AbstractPlayer __instance, AbstractPotion potion) {
         // 只在战斗中触发解说
         if (!isInCombat()) {
             return;
         }
         
-        // 检查药水是否成功使用
-        if (!wasPotionSuccessfullyUsed(__instance, target)) {
+        // 检查药水是否有效
+        if (!isPotionValid(potion)) {
             return;
         }
         
         try {
+            // 获取药水目标（通常是玩家或敌人）
+            AbstractCreature target = getPotionTarget(potion);
+            
             // 触发解说
-            CommentaryUtils.triggerCommentary("用药水", __instance, target);
+            CommentaryUtils.triggerCommentary("用药水", potion, target);
         } catch (Exception e) {
             // 静默处理异常，避免影响游戏正常进行
         }
@@ -53,12 +58,11 @@ public class PlayerPotionPatch {
     }
     
     /**
-     * 检查药水是否成功使用
-     * @param potion 使用的药水
-     * @param target 目标
-     * @return 是否成功使用
+     * 检查药水是否有效
+     * @param potion 药水
+     * @return 是否有效
      */
-    private static boolean wasPotionSuccessfullyUsed(AbstractPotion potion, AbstractCreature target) {
+    private static boolean isPotionValid(AbstractPotion potion) {
         // 检查药水是否为null
         if (potion == null) {
             return false;
@@ -69,20 +73,23 @@ public class PlayerPotionPatch {
             return false;
         }
         
-        // 检查目标是否有效
-        if (target == null) {
+        // 检查药水名称是否有效
+        if (potion.name == null || potion.name.isEmpty()) {
             return false;
         }
         
-        // 检查是否是玩家使用的药水（通过检查药水是否在玩家药水栏中）
-        boolean isPlayerPotion = false;
-        for (AbstractPotion playerPotion : AbstractDungeon.player.potions) {
-            if (playerPotion == potion) {
-                isPlayerPotion = true;
-                break;
-            }
-        }
-        
-        return isPlayerPotion;
+        return true;
+    }
+    
+    /**
+     * 获取药水目标
+     * @param potion 药水
+     * @return 目标生物
+     */
+    private static AbstractCreature getPotionTarget(AbstractPotion potion) {
+        // 大多数药水以玩家为目标，除非是攻击性药水
+        // 这里简化处理，返回玩家作为默认目标
+        // 在实际使用中，药水的目标会在use方法中确定
+        return AbstractDungeon.player;
     }
 }

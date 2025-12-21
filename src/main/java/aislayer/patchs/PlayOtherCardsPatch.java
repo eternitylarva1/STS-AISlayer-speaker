@@ -28,8 +28,9 @@ public class PlayOtherCardsPatch {
                         && isAIStart()
         ) {
 
-            String todo = "现在你可以使用药水、打出手牌、结束回合";
-            AIUtils.action(getInfo(todo));
+            // 禁用AI自动操作，只保留解说功能
+            // String todo = "现在你可以选择使用药水、打出手牌、结束回合";
+            // AIUtils.action(getInfo(todo));
 
         }
     }
