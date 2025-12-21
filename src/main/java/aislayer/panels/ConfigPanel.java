@@ -33,6 +33,12 @@ public class ConfigPanel extends EasyConfigPanel {
     public static String language = "中文";
     public static boolean handleApiUrl = true;
 
+    // 解说相关配置
+    public static boolean commentaryEnabled = true;
+    public static int commentaryFrequency = 1;
+    public static String commentaryStyle = "幽默";
+    public static boolean showCommentaryHistory = false;
+
     public ConfigPanel() {
         super("aislayer", getUIStrings(), "config");
         setupTextField("apiUrl_1", 500, 100);

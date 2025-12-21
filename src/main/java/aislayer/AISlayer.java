@@ -265,6 +265,84 @@ public class AISlayer {
         return infoJson;
     }
 
+    /**
+     * 获取行动相关的游戏状态信息，用于解说模式
+     * @param actionType 行动类型（打牌、用药水、结束回合等）
+     * @param params 行动相关参数
+     * @return 包含行动信息的JSON对象
+     */
+    public static JSONObject getActionInfo(String actionType, Object... params) {
+        JSONObject actionJson = new JSONObject();
+        
+        // 基本游戏状态
+        JSONObject baseInfo = getInfo("玩家行动");
+        actionJson.put("游戏状态", baseInfo);
+        
+        // 行动信息
+        actionJson.put("行动类型", actionType);
+        actionJson.put("当前回合", GameActionManager.turn);
+        
+        // 根据行动类型添加特定信息
+        switch (actionType) {
+            case "打牌":
+                if (params.length >= 2) {
+                    AbstractCard card = (AbstractCard) params[0];
+                    AbstractMonster target = (AbstractMonster) params[1];
+                    actionJson.put("使用的卡牌", getCardInfo(card));
+                    if (target != null) {
+                        actionJson.put("目标", target.name);
+                        actionJson.put("目标血量", target.currentHealth + "/" + target.maxHealth);
+                        if (target.currentBlock > 0) {
+                            actionJson.put("目标格挡", target.currentBlock);
+                        }
+                    }
+                    actionJson.put("消耗能量", card.costForTurn);
+                    actionJson.put("剩余能量", EnergyPanel.getCurrentEnergy());
+                }
+                break;
+            case "用药水":
+                if (params.length >= 2) {
+                    AbstractPotion potion = (AbstractPotion) params[0];
+                    AbstractMonster target = (AbstractMonster) params[1];
+                    actionJson.put("使用的药水", potion.name);
+                    actionJson.put("药水描述", handleDescription(potion.description));
+                    if (target != null) {
+                        actionJson.put("目标", target.name);
+                        actionJson.put("目标血量", target.currentHealth + "/" + target.maxHealth);
+                    }
+                }
+                break;
+            case "结束回合":
+                actionJson.put("剩余能量", EnergyPanel.getCurrentEnergy());
+                actionJson.put("剩余手牌", AbstractDungeon.player.hand.group.size());
+                actionJson.put("玩家血量", AbstractDungeon.player.currentHealth + "/" + AbstractDungeon.player.maxHealth);
+                if (AbstractDungeon.player.currentBlock > 0) {
+                    actionJson.put("玩家格挡", AbstractDungeon.player.currentBlock);
+                }
+                break;
+            case "选择":
+                if (params.length >= 1) {
+                    actionJson.put("选择类型", params[0].toString());
+                }
+                if (params.length >= 2) {
+                    actionJson.put("选择详情", params[1].toString());
+                }
+                break;
+            case "火堆选择":
+                if (params.length >= 1) {
+                    actionJson.put("火堆行为", params[0].toString());
+                }
+                break;
+            case "地图选择":
+                if (params.length >= 1) {
+                    actionJson.put("选择的房间", params[0].toString());
+                }
+                break;
+        }
+        
+        return actionJson;
+    }
+
     public static JSONObject getPowerInfo (AbstractPower power) {
         JSONObject monsterPowerJson = new JSONObject();
         monsterPowerJson.put("名称", power.name);
@@ -547,6 +625,64 @@ public class AISlayer {
             allMapNodes.addAll(raws);
         }
         return allMapNodes;
+    }
+
+    /**
+     * 检查是否应该触发解说（基于冷却时间和配置）
+     * @return 是否应该触发解说
+     */
+    public static boolean shouldTriggerCommentary() {
+        // 这里将添加冷却时间和配置检查逻辑
+        // 暂时返回true，后续会在CommentaryUtils中实现
+        return true;
+    }
+
+    /**
+     * 获取当前游戏状态的简要描述
+     * @return 状态描述字符串
+     */
+    public static String getGameStateDescription() {
+        if (AbstractDungeon.getCurrRoom() == null) {
+            return "不在游戏中";
+        }
+        
+        String roomType = AbstractDungeon.getCurrRoom().getClass().getSimpleName();
+        switch (roomType) {
+            case "MonsterRoom":
+            case "MonsterRoomBoss":
+                return "战斗中";
+            case "RestRoom":
+                return "在火堆房间";
+            case "TreasureRoom":
+                return "在宝箱房间";
+            case "ShopRoom":
+                return "在商店";
+            case "EventRoom":
+                return "在事件房间";
+            default:
+                return "在" + roomType;
+        }
+    }
+
+    /**
+     * 格式化解说内容，确保适合游戏内显示
+     * @param commentary 原始解说内容
+     * @return 格式化后的解说内容
+     */
+    public static String formatCommentary(String commentary) {
+        if (commentary == null || commentary.trim().isEmpty()) {
+            return "有趣的行动...";
+        }
+        
+        // 限制长度，避免过长影响游戏体验
+        if (commentary.length() > 50) {
+            commentary = commentary.substring(0, 47) + "...";
+        }
+        
+        // 移除不合适的字符
+        commentary = commentary.replace("\n", " ").replace("\r", " ");
+        
+        return commentary.trim();
     }
 
 }

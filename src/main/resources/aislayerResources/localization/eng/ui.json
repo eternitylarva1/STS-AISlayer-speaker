@@ -16,7 +16,11 @@
         "selectedModel_2_2": "Enable Model 2",
           "model_2_2": "Model Name",
       "language": "Language",
-      "handleApiUrl": "If Auto Handle API URL(If disabled, input URL starting with http:// and ending with completions)"
+      "handleApiUrl": "If Auto Handle API URL(If disabled, input URL starting with http:// and ending with completions)",
+      "commentaryEnabled": "Enable AI Commentary",
+      "commentaryFrequency": "Commentary Frequency",
+      "commentaryStyle": "Commentary Style",
+      "showCommentaryHistory": "Show Commentary History"
     }
   }
 }

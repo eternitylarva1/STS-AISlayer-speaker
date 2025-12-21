@@ -21,16 +21,20 @@ public class Subscribe implements
 
     public static void initialize() {
         new Subscribe();
+        // 初始化解说系统
+        CommentarySubscribe.initialize();
     }
 
     @Override
     public void receiveOnBattleStart(AbstractRoom abstractRoom) {
         AISlayer.intentUpdated = false;
+        // 重置解说系统
+        CommentarySubscribe.onBattleStart();
     }
 
     @Override
     public void receivePostInitialize() {
         Texture badgeTexture = ImageMaster.loadImage("aislayerResources/images/badge.png");
-        BaseMod.registerModBadge(badgeTexture, "AI爬塔", "河童", "让AI来爬塔!", new ConfigPanel());
+        BaseMod.registerModBadge(badgeTexture, "AI爬塔解说", "河童", "让AI来解说你的爬塔过程!", new ConfigPanel());
     }
 }

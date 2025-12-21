@@ -85,152 +85,299 @@ public class AIUtils {
 
             addToBot(new TalkAction(true, arguments.getString("reason"), 4.0F, 4.0F));
 
-            switch (functionName) {
-                case "playCard":
-                    int cardIndex = arguments.getInt("index");
-                    int cardTargetIndex = arguments.getInt("target");
+            executeAction(functionName, arguments);
+        });
+        thread.start();
+    }
 
-                    AbstractCard card = AbstractDungeon.player.hand.group.get(cardIndex);
+    /**
+     * 执行AI决策的动作
+     * @param functionName 动作名称
+     * @param arguments 动作参数
+     */
+    private static void executeAction(String functionName, JSONObject arguments) {
+        switch (functionName) {
+            case "playCard":
+                int cardIndex = arguments.getInt("index");
+                int cardTargetIndex = arguments.getInt("target");
 
-                    ArrayList<AbstractCreature> cardTargets = new ArrayList<>();
-                    cardTargets.add(AbstractDungeon.player);
-                    cardTargets.addAll(AbstractDungeon.getMonsters().monsters);
-                    AbstractCreature cardTarget = cardTargets.get(cardTargetIndex);
+                AbstractCard card = AbstractDungeon.player.hand.group.get(cardIndex);
 
-                    if (cardTarget == AbstractDungeon.player) {
-                        cardTarget = cardTargets.get(1);
+                ArrayList<AbstractCreature> cardTargets = new ArrayList<>();
+                cardTargets.add(AbstractDungeon.player);
+                cardTargets.addAll(AbstractDungeon.getMonsters().monsters);
+                AbstractCreature cardTarget = cardTargets.get(cardTargetIndex);
+
+                if (cardTarget == AbstractDungeon.player) {
+                    cardTarget = cardTargets.get(1);
+                }
+                addToBot(new AIUseCardAction(card, cardTarget));
+                break;
+            case "endTurn":
+                boolean suicide = arguments.getBoolean("suicide");
+                if (suicide) {
+                    addToBot(new LoseHPAction(AbstractDungeon.player, AbstractDungeon.player, 99999));
+                } else {
+                    if (EnergyPanel.getCurrentEnergy() > 0 && !AbstractDungeon.player.hasRelic("Ice Cream")) {
+                        addTip("游戏", "如果没有相关的遗物或者效果,能量和手牌就不会保留到下个回合");
                     }
-                    addToBot(new AIUseCardAction(card, cardTarget));
-                    break;
-                case "endTurn":
-                    boolean suicide = arguments.getBoolean("suicide");
-                    if (suicide) {
-                        addToBot(new LoseHPAction(AbstractDungeon.player, AbstractDungeon.player, 99999));
-                    } else {
-                        if (EnergyPanel.getCurrentEnergy() > 0 && !AbstractDungeon.player.hasRelic("Ice Cream")) {
-                            addTip("游戏", "如果没有相关的遗物或者效果,能量和手牌就不会保留到下个回合");
-                        }
-                        addToBot(new AIEndTurnAction());
-                    }
-                    break;
-                case "usePotion":
-                    int potionIndex = arguments.getInt("index");
-                    int potionTargetIndex = arguments.getInt("target");
+                    addToBot(new AIEndTurnAction());
+                }
+                break;
+            case "usePotion":
+                int potionIndex = arguments.getInt("index");
+                int potionTargetIndex = arguments.getInt("target");
 
-                    AbstractPotion potion = AbstractDungeon.player.potions.get(potionIndex);
+                AbstractPotion potion = AbstractDungeon.player.potions.get(potionIndex);
 
-                    ArrayList<AbstractCreature> potionTargets = new ArrayList<>();
-                    potionTargets.add(AbstractDungeon.player);
-                    potionTargets.addAll(AbstractDungeon.getMonsters().monsters);
+                ArrayList<AbstractCreature> potionTargets = new ArrayList<>();
+                potionTargets.add(AbstractDungeon.player);
+                potionTargets.addAll(AbstractDungeon.getMonsters().monsters);
 
-                    AbstractCreature potionTarget = potionTargets.get(potionTargetIndex);
+                AbstractCreature potionTarget = potionTargets.get(potionTargetIndex);
 
-                    addToBot(new AIUsePotionAction(potion, potionTarget));
-                    break;
-                case "select":
-                    JSONArray selectIndexes = arguments.getJSONArray("Indexes");
+                addToBot(new AIUsePotionAction(potion, potionTarget));
+                break;
+            case "select":
+                JSONArray selectIndexes = arguments.getJSONArray("Indexes");
 
-                    if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID) {
-                        for (int i = 0; i < selectIndexes.length(); i++) {
-                            int selectIndex = selectIndexes.getInt(i);
-                            AbstractCard selectedCard = AbstractDungeon.gridSelectScreen.targetGroup.group.get(selectIndex);
-                            selectedCard.hb.clicked = true;
-                            lockedHoveredHitbox = selectedCard.hb;
-                        }
-                        AbstractDungeon.gridSelectScreen.confirmButton.hb.clicked = true;
-                        break;
-                    } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT) {
-                        for (int i = 0; i < selectIndexes.length(); i++) {
-                            int selectIndex = selectIndexes.getInt(i);
-                            AbstractCard selectedCard = AbstractDungeon.player.hand.group.get(selectIndex);
-                            AbstractDungeon.player.hand.removeCard(selectedCard);
-                            AbstractDungeon.player.hand.refreshHandLayout();
-                            AbstractDungeon.handCardSelectScreen.selectedCards.addToBottom(selectedCard);
-                        }
-                        AbstractDungeon.handCardSelectScreen.button.hb.clicked = true;
-                        break;
-                    } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD) {
-                        AbstractCard selectedCard = AbstractDungeon.cardRewardScreen.rewardGroup.get(selectIndexes.getInt(0));
+                if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID) {
+                    for (int i = 0; i < selectIndexes.length(); i++) {
+                        int selectIndex = selectIndexes.getInt(i);
+                        AbstractCard selectedCard = AbstractDungeon.gridSelectScreen.targetGroup.group.get(selectIndex);
                         selectedCard.hb.clicked = true;
                         lockedHoveredHitbox = selectedCard.hb;
-                        break;
-                    } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.BOSS_REWARD) {
-                        if (!selectIndexes.isEmpty()) {
-                            Hitbox hb = AbstractDungeon.bossRelicScreen.relics.get(selectIndexes.getInt(0)).hb;
-                            hb.clicked = true;
-                            lockedHoveredHitbox = hb;
-                        }
-                        pressProceedButton();
-                    } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD) {
-                        ArrayList<RewardItem> rewards = new ArrayList<>(AbstractDungeon.combatRewardScreen.rewards);
-                        for (int i = 0; i < selectIndexes.length(); i++) {
-                            int selectIndex = selectIndexes.getInt(i);
-                            RewardItem selectedReward = rewards.get(selectIndex);
-                            selectedReward.hb.clicked = true;
-                            lockedHoveredHitbox = selectedReward.hb;
-                            int fuckNum = 0;
-                            while (true) {
-                                if (fuckNum > 10 && lockedHoveredHitbox == null) {
-                                    break;
+                    }
+                    AbstractDungeon.gridSelectScreen.confirmButton.hb.clicked = true;
+                    break;
+                } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT) {
+                    for (int i = 0; i < selectIndexes.length(); i++) {
+                        int selectIndex = selectIndexes.getInt(i);
+                        AbstractCard selectedCard = AbstractDungeon.player.hand.group.get(selectIndex);
+                        AbstractDungeon.player.hand.removeCard(selectedCard);
+                        AbstractDungeon.player.hand.refreshHandLayout();
+                        AbstractDungeon.handCardSelectScreen.selectedCards.addToBottom(selectedCard);
+                    }
+                    AbstractDungeon.handCardSelectScreen.button.hb.clicked = true;
+                    break;
+                } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD) {
+                    AbstractCard selectedCard = AbstractDungeon.cardRewardScreen.rewardGroup.get(selectIndexes.getInt(0));
+                    selectedCard.hb.clicked = true;
+                    lockedHoveredHitbox = selectedCard.hb;
+                    break;
+                } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.BOSS_REWARD) {
+                    if (!selectIndexes.isEmpty()) {
+                        Hitbox hb = AbstractDungeon.bossRelicScreen.relics.get(selectIndexes.getInt(0)).hb;
+                        hb.clicked = true;
+                        lockedHoveredHitbox = hb;
+                    }
+                    pressProceedButton();
+                } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD) {
+                    ArrayList<RewardItem> rewards = new ArrayList<>(AbstractDungeon.combatRewardScreen.rewards);
+                    for (int i = 0; i < selectIndexes.length(); i++) {
+                        int selectIndex = selectIndexes.getInt(i);
+                        RewardItem selectedReward = rewards.get(selectIndex);
+                        selectedReward.hb.clicked = true;
+                        lockedHoveredHitbox = selectedReward.hb;
+                        int fuckNum = 0;
+                        while (true) {
+                            if (fuckNum > 10 && lockedHoveredHitbox == null) {
+                                break;
+                            } else {
+                                if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD) {
+                                    fuckNum++;
                                 } else {
-                                    if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD) {
-                                        fuckNum++;
-                                    } else {
-                                        fuckNum = 0;
-                                    }
-                                    logger.info("等待{}", AbstractDungeon.screen);
+                                    fuckNum = 0;
                                 }
+                                logger.info("等待{}", AbstractDungeon.screen);
                             }
                         }
-                        pressProceedButton();
-                        break;
-                    } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
-                        ArrayList<ArrayList<MapRoomNode>> mapPaths = getMapPaths(AbstractDungeon.getCurrMapNode());
-                        ArrayList<MapRoomNode> mapPath = mapPaths.get(selectIndexes.getInt(0));
-                        MapRoomNode mapNode = mapPath.get(0);
-                        mapNode.hb.clicked = true;
-                        lockedHoveredHitbox = mapNode.hb;
-                        AbstractDungeon.dungeonMapScreen.clicked = true;
-                        InputHelper.justClickedLeft = true;
-                        break;
-                    } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.NONE) {
-                        String roomName = AbstractDungeon.getCurrRoom().getClass().getSimpleName();
-                        switch (roomName) {
-                            case "RestRoom":
-                                if (!selectIndexes.isEmpty()) {
-                                    int selectIndex = selectIndexes.getInt(0);
-                                    AbstractCampfireOption selectedOption = SelectCampfirePatch.buttons.get(selectIndex);
-                                    selectedOption.hb.clicked = true;
-                                    pressProceedButton();
-                                } else {
-                                    pressProceedButton();
-                                }
-                                break;
-                        }
                     }
+                    pressProceedButton();
                     break;
-                case "boolean":
-                    boolean select = arguments.getBoolean("boolean");
-                    AbstractRoom room = AbstractDungeon.getCurrRoom();
-                    String roomName = room.getClass().getSimpleName();
+                } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
+                    ArrayList<ArrayList<MapRoomNode>> mapPaths = getMapPaths(AbstractDungeon.getCurrMapNode());
+                    ArrayList<MapRoomNode> mapPath = mapPaths.get(selectIndexes.getInt(0));
+                    MapRoomNode mapNode = mapPath.get(0);
+                    mapNode.hb.clicked = true;
+                    lockedHoveredHitbox = mapNode.hb;
+                    AbstractDungeon.dungeonMapScreen.clicked = true;
+                    InputHelper.justClickedLeft = true;
+                    break;
+                } else if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.NONE) {
+                    String roomName = AbstractDungeon.getCurrRoom().getClass().getSimpleName();
                     switch (roomName) {
-                        case "TreasureRoomBoss":
-                        case "TreasureRoom":
-                            if (select) {
-                                AbstractChest chest = ((TreasureRoom) room).chest;
-                                chest.isOpen = true;
-                                chest.open(false);
+                        case "RestRoom":
+                            if (!selectIndexes.isEmpty()) {
+                                int selectIndex = selectIndexes.getInt(0);
+                                AbstractCampfireOption selectedOption = SelectCampfirePatch.buttons.get(selectIndex);
+                                selectedOption.hb.clicked = true;
+                                pressProceedButton();
                             } else {
                                 pressProceedButton();
                             }
                             break;
                     }
-                    break;
-                default:
-                    break;
+                }
+                break;
+            case "boolean":
+                boolean select = arguments.getBoolean("boolean");
+                AbstractRoom room = AbstractDungeon.getCurrRoom();
+                String roomName = room.getClass().getSimpleName();
+                switch (roomName) {
+                    case "TreasureRoomBoss":
+                    case "TreasureRoom":
+                        if (select) {
+                            AbstractChest chest = ((TreasureRoom) room).chest;
+                            chest.isOpen = true;
+                            chest.open(false);
+                        } else {
+                            pressProceedButton();
+                        }
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * 获取AI解说内容
+     * @param actionInfo 行动信息
+     */
+    public static void getCommentary(JSONObject actionInfo) {
+        Thread thread = new Thread(() -> {
+            try {
+                String commentary = callCommentaryAPI(actionInfo);
+                if (commentary != null && !commentary.trim().isEmpty()) {
+                    // 在游戏主线程中显示解说
+                    addToBot(new TalkAction(true, commentary, 3.0F, 3.0F));
+                }
+            } catch (Exception e) {
+                logger.error("获取解说失败", e);
             }
         });
         thread.start();
+    }
+
+    /**
+     * 调用AI解说API
+     * @param actionInfo 行动信息
+     * @return 解说内容
+     */
+    private static String callCommentaryAPI(JSONObject actionInfo) throws IOException {
+        JSONObject requestBody = new JSONObject();
+        
+        try {
+            requestBody.put("model", model);
+            
+            // 构建解说提示词
+            String prompt = buildCommentaryPrompt(actionInfo);
+            
+            JSONArray messages = new JSONArray();
+            JSONObject systemMessage = new JSONObject();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", "你是一个《杀戮尖塔》游戏解说员，请用简洁、有趣的语言解说玩家的行动。解说应该简短有力，不超过30个字，带有一定的幽默感和游戏专业性。");
+            messages.put(systemMessage);
+            
+            JSONObject userMessage = new JSONObject();
+            userMessage.put("role", "user");
+            userMessage.put("content", prompt);
+            messages.put(userMessage);
+            
+            requestBody.put("messages", messages);
+            requestBody.put("max_tokens", 50);
+            requestBody.put("temperature", 0.7);
+            
+        } catch (Exception e) {
+            logger.error("构建解说请求失败", e);
+            return "精彩的行动！";
+        }
+        
+        logger.info("请求AI解说...");
+        
+        // 创建连接
+        URL url = new URL(apiUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+        connection.setDoOutput(true);
+        
+        // 发送请求
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        } catch (IOException e) {
+            logger.error("发送解说请求失败", e);
+            return "精彩的行动！";
+        }
+        
+        // 获取响应
+        int responseCode = connection.getResponseCode();
+        if (responseCode == 200) {
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder response = new StringBuilder();
+                String responseLine;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+                
+                JSONObject responseJSON = new JSONObject(response.toString());
+                return responseJSON
+                        .getJSONArray("choices")
+                        .getJSONObject(0)
+                        .getJSONObject("message")
+                        .getString("content")
+                        .trim();
+            } catch (Exception e) {
+                logger.error("解析解说响应失败", e);
+                return "精彩的行动！";
+            }
+        } else {
+            logger.error("解说API调用失败，响应码: " + responseCode);
+            return "精彩的行动！";
+        }
+    }
+
+    /**
+     * 构建解说提示词
+     * @param actionInfo 行动信息
+     * @return 提示词
+     */
+    private static String buildCommentaryPrompt(JSONObject actionInfo) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("请解说以下游戏行动：\n");
+        
+        String actionType = actionInfo.getString("行动类型");
+        prompt.append("行动类型：").append(actionType).append("\n");
+        
+        switch (actionType) {
+            case "打牌":
+                if (actionInfo.has("使用的卡牌")) {
+                    JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
+                    prompt.append("使用的卡牌：").append(cardInfo.getString("名称")).append("\n");
+                    prompt.append("卡牌类型：").append(cardInfo.getString("类型")).append("\n");
+                }
+                if (actionInfo.has("目标")) {
+                    prompt.append("目标：").append(actionInfo.getString("目标")).append("\n");
+                }
+                break;
+            case "用药水":
+                if (actionInfo.has("使用的药水")) {
+                    prompt.append("使用的药水：").append(actionInfo.getString("使用的药水")).append("\n");
+                }
+                break;
+            case "结束回合":
+                prompt.append("剩余能量：").append(actionInfo.getInt("剩余能量")).append("\n");
+                prompt.append("剩余手牌：").append(actionInfo.getInt("剩余手牌")).append("\n");
+                break;
+        }
+        
+        prompt.append("\n请给出简短有趣的解说：");
+        return prompt.toString();
     }
 
     public static void pressProceedButton() {
