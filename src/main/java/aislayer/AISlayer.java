@@ -288,12 +288,34 @@ public class AISlayer {
                 if (params.length >= 2) {
                     AbstractCard card = (AbstractCard) params[0];
                     AbstractMonster target = (AbstractMonster) params[1];
+                    
+                    // 玩家基本信息
+                    actionJson.put("玩家血量", AbstractDungeon.player.currentHealth + "/" + AbstractDungeon.player.maxHealth);
+                    actionJson.put("当前能量", EnergyPanel.getCurrentEnergy());
+                    
+                    // 手上的牌信息
+                    JSONArray handCards = new JSONArray();
+                    for (AbstractCard handCard : AbstractDungeon.player.hand.group) {
+                        JSONObject handCardInfo = new JSONObject();
+                        handCardInfo.put("名称", handCard.name);
+                        handCardInfo.put("能耗", handCard.costForTurn);
+                        handCards.put(handCardInfo);
+                    }
+                    actionJson.put("手上的牌", handCards);
+                    
+                    // 使用的卡牌信息
                     actionJson.put("使用的卡牌", getCardInfo(card));
                     if (target != null) {
                         actionJson.put("目标", target.name);
-                        actionJson.put("目标血量", target.currentHealth + "/" + target.maxHealth);
+                        actionJson.put("怪物血量", target.currentHealth + "/" + target.maxHealth);
                         if (target.currentBlock > 0) {
-                            actionJson.put("目标格挡", target.currentBlock);
+                            actionJson.put("怪物格挡", target.currentBlock);
+                        }
+                        
+                        // 怪物意图
+                        ArrayList<String> monsterIntentDesc = getMonsterIntentDesc(target);
+                        if (!monsterIntentDesc.isEmpty()) {
+                            actionJson.put("怪物意图", String.join("，", monsterIntentDesc));
                         }
                     }
                     actionJson.put("消耗能量", card.costForTurn);

@@ -34,16 +34,7 @@ public class EnterRoomPatch {
             AISlayer.allPotions.clear();
             AISlayer.allRelics.clear();
 
-            String systemMessage = "你是一个专业的杀戮尖塔高手玩家，请根据游戏信息和信息里面当前你需要做的事直接执行你的下一步操作，任何操作都只能调用函数工具，禁止输出任何其他内容，如果要回复文字内容就使用" + ConfigPanel.language + "语言，比如行动理由，注意遵守游戏规则，有策略有头脑地完成这局游戏，每一步行动要有规划，不能仅仅看当前这一步，要考虑后面。如果要击杀最终BOSS心脏需要在第三章结束前拿到红绿蓝三种钥匙，红宝石在火堆，蓝宝石在非BOSS宝箱，绿宝石在每一层的加强精英战利品。";
-
             AIUtils.messagesArray = new JSONArray();
-            JSONObject msg = new JSONObject();
-            msg.put("role", "system");
-            msg.put("content", systemMessage);
-            AIUtils.messagesArray.put(msg);
-
-            logger.info("[进入新房间,AI记忆已清空]{}", systemMessage);
-
         }
     }
 

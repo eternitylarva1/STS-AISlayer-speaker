@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -295,7 +296,7 @@ public class AIUtils {
             JSONArray messages = new JSONArray();
             JSONObject systemMessage = new JSONObject();
             systemMessage.put("role", "system");
-            systemMessage.put("content", "你是一个专业的《杀戮尖塔》游戏解说员。请根据提供的游戏状态信息，用生动有趣的语言解说玩家的行动。解说应该：1) 简洁有力，控制在5-15字之间 2) 带有幽默感和游戏专业性 3) 结合当前战斗局势和游戏策略 4) 适当使用游戏术语和梗 5) 避免过于简单重复的描述。请从以下角度进行解说：\n\n**打牌意图角度**：\n- 战术选择：为什么选这张牌而不是其他牌\n- 资源管理：能量使用的合理性\n- 时机把握：为什么现在打这张牌\n- 风险评估：这个决策的风险和收益\n\n**战斗局势角度**：\n- 血量压力：玩家或敌人的血量状况\n- 怪物意图：针对怪物的下一步行动\n- 节奏控制：是进攻还是防守的节奏\n- 清场策略：优先处理哪个敌人\n\n**卡牌配合角度**：\n- 连招组合：这张牌与其他牌的配合\n- 效果叠加：与遗物、姿态的协同\n- 状态利用：利用现有buff/debuff\n- 长远规划：为后续回合做准备\n\n**游戏专业角度**：\n- 职业特色：体现该角色的玩法特点\n- 稀有度评价：基础卡vs稀有卡的使用价值\n- 效率分析：伤害/能量比、收益/成本比\n- 版本理解：对游戏机制的深度理解\n\n**趣味表达角度**：\n- 角色扮演：代入游戏角色的口吻\n- 梗文化：使用杀戮尖塔玩家圈的梗\n- 情绪渲染：紧张、轻松、激动等氛围\n- 故事性：把战斗过程讲成小故事\n\n请给出有深度、有见解的解说。");
+            systemMessage.put("content", "你是游戏主播，用30字左右的主播口吻解说打牌，要有实际内容，比如：噶人们，看这波打击打！直接秒杀！");
             messages.put(systemMessage);
             
             JSONObject userMessage = new JSONObject();
@@ -322,6 +323,11 @@ public class AIUtils {
         connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         connection.setDoOutput(true);
         
+        // 设置超时时间（从配置中读取，单位：毫秒）
+        int timeoutMs = aislayer.panels.ConfigPanel.commentaryTimeout * 1000;
+        connection.setConnectTimeout(timeoutMs);
+        connection.setReadTimeout(timeoutMs);
+        
         // 发送请求
         try (OutputStream os = connection.getOutputStream()) {
             byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);
@@ -332,29 +338,37 @@ public class AIUtils {
         }
         
         // 获取响应
-        int responseCode = connection.getResponseCode();
-        if (responseCode == 200) {
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                StringBuilder response = new StringBuilder();
-                String responseLine;
-                while ((responseLine = br.readLine()) != null) {
-                    response.append(responseLine.trim());
+        try {
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String responseLine;
+                    while ((responseLine = br.readLine()) != null) {
+                        response.append(responseLine.trim());
+                    }
+                    
+                    JSONObject responseJSON = new JSONObject(response.toString());
+                    return responseJSON
+                            .getJSONArray("choices")
+                            .getJSONObject(0)
+                            .getJSONObject("message")
+                            .getString("content")
+                            .trim();
+                } catch (Exception e) {
+                    logger.error("解析解说响应失败", e);
+                    return "精彩的行动！";
                 }
-                
-                JSONObject responseJSON = new JSONObject(response.toString());
-                return responseJSON
-                        .getJSONArray("choices")
-                        .getJSONObject(0)
-                        .getJSONObject("message")
-                        .getString("content")
-                        .trim();
-            } catch (Exception e) {
-                logger.error("解析解说响应失败", e);
+            } else {
+                logger.error("解说API调用失败，响应码: " + responseCode);
                 return "精彩的行动！";
             }
-        } else {
-            logger.error("解说API调用失败，响应码: " + responseCode);
+        } catch (SocketTimeoutException e) {
+            logger.info("API调用超时，使用默认解说");
+            return "精彩的行动！";
+        } catch (Exception e) {
+            logger.error("获取解说响应时发生错误", e);
             return "精彩的行动！";
         }
     }
@@ -366,115 +380,39 @@ public class AIUtils {
      */
     private static String buildCommentaryPrompt(JSONObject actionInfo) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("请根据以下详细的游戏状态信息，解说玩家的行动：\n\n");
         
         String actionType = actionInfo.getString("行动类型");
-        prompt.append("【行动信息】\n");
-        prompt.append("行动类型：").append(actionType).append("\n");
-        prompt.append("当前回合：").append(actionInfo.getInt("当前回合")).append("\n");
         
-        // 添加详细的游戏状态信息
-        if (actionInfo.has("游戏状态")) {
-            JSONObject gameState = actionInfo.getJSONObject("游戏状态");
-            prompt.append("\n【游戏状态】\n");
-            
-            // 玩家信息
-            JSONArray creatures = gameState.getJSONArray("生物");
-            if (creatures.length() > 0) {
-                JSONObject player = creatures.getJSONObject(0);
-                prompt.append("玩家状态：\n");
-                prompt.append("- 角色：").append(player.getString("角色")).append("\n");
-                prompt.append("- 血量：").append(player.getString("血量")).append("\n");
-                prompt.append("- 能量：").append(player.getString("能量")).append("\n");
-                if (player.has("姿态")) {
-                    prompt.append("- 姿态：").append(player.getString("姿态")).append("\n");
-                }
-                
-                // 手牌信息
-                if (player.has("手牌")) {
-                    prompt.append("- 手牌：").append(player.getJSONArray("手牌").toString()).append("\n");
-                }
-                
-                // 遗物信息
-                if (player.has("遗物")) {
-                    prompt.append("- 遗物：").append(player.getJSONArray("遗物").toString()).append("\n");
+        // 只为打牌行动提供详细解说
+        if ("打牌".equals(actionType)) {
+            // 明确说明玩家操作
+            prompt.append("我打出了");
+            if (actionInfo.has("使用的卡牌")) {
+                JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
+                prompt.append(cardInfo.getString("名称"));
+                if (cardInfo.has("描述")) {
+                    prompt.append("（").append(cardInfo.getString("描述")).append("）");
                 }
             }
             
-            // 怪物信息
-            if (creatures.length() > 1) {
-                prompt.append("\n敌人状态：\n");
-                for (int i = 1; i < creatures.length(); i++) {
-                    JSONObject monster = creatures.getJSONObject(i);
-                    if (!monster.has("状态") || !monster.getString("状态").equals("不可选中")) {
-                        prompt.append("- ").append(monster.getString("怪物"));
-                        if (monster.has("血量")) {
-                            prompt.append("（血量：").append(monster.getString("血量")).append("）");
-                        }
-                        if (monster.has("意图")) {
-                            prompt.append("，意图：").append(monster.getJSONArray("意图").toString());
-                        }
-                        prompt.append("\n");
-                    }
-                }
+            // 目标信息
+            if (actionInfo.has("目标")) {
+                prompt.append("攻击").append(actionInfo.getString("目标"));
             }
+            prompt.append("。");
+            
+            // 背景信息
+            if (actionInfo.has("怪物意图")) {
+                prompt.append("背景：怪物").append(actionInfo.getString("怪物意图")).append("。");
+            }
+            
+            // 明确要求解说动机
+            prompt.append("噶人们，看这波操作！请用主播口吻解说我为什么这样打：");
+        } else {
+            // 其他行动类型的简化处理
+            prompt.append("噶人们，看这波").append(actionType).append("操作！请用主播口吻解说：");
         }
         
-        // 根据行动类型添加特定信息
-        prompt.append("\n【行动详情】\n");
-        switch (actionType) {
-            case "打牌":
-                if (actionInfo.has("使用的卡牌")) {
-                    JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
-                    prompt.append("使用的卡牌：").append(cardInfo.getString("名称")).append("\n");
-                    prompt.append("- 类型：").append(cardInfo.getString("类型")).append("\n");
-                    prompt.append("- 稀有度：").append(cardInfo.getString("稀有度")).append("\n");
-                    prompt.append("- 颜色：").append(cardInfo.getString("颜色")).append("\n");
-                    if (cardInfo.has("能耗")) {
-                        prompt.append("- 能耗：").append(cardInfo.getString("能耗")).append("\n");
-                    }
-                    if (cardInfo.has("描述")) {
-                        prompt.append("- 描述：").append(cardInfo.getString("描述")).append("\n");
-                    }
-                }
-                if (actionInfo.has("目标")) {
-                    prompt.append("目标：").append(actionInfo.getString("目标")).append("\n");
-                }
-                if (actionInfo.has("消耗能量")) {
-                    prompt.append("消耗能量：").append(actionInfo.getInt("消耗能量")).append("\n");
-                }
-                if (actionInfo.has("剩余能量")) {
-                    prompt.append("剩余能量：").append(actionInfo.getInt("剩余能量")).append("\n");
-                }
-                break;
-            case "用药水":
-                if (actionInfo.has("使用的药水")) {
-                    prompt.append("使用的药水：").append(actionInfo.getString("使用的药水")).append("\n");
-                }
-                if (actionInfo.has("药水描述")) {
-                    prompt.append("药水描述：").append(actionInfo.getString("药水描述")).append("\n");
-                }
-                if (actionInfo.has("目标")) {
-                    prompt.append("目标：").append(actionInfo.getString("目标")).append("\n");
-                }
-                break;
-            case "结束回合":
-                if (actionInfo.has("剩余能量")) {
-                    prompt.append("剩余能量：").append(actionInfo.getInt("剩余能量")).append("\n");
-                }
-                if (actionInfo.has("剩余手牌")) {
-                    prompt.append("剩余手牌：").append(actionInfo.getInt("剩余手牌")).append("\n");
-                }
-                if (actionInfo.has("玩家血量")) {
-                    prompt.append("玩家血量：").append(actionInfo.getString("玩家血量")).append("\n");
-                }
-                if (actionInfo.has("玩家格挡")) {
-                    prompt.append("玩家格挡：").append(actionInfo.getInt("玩家格挡")).append("\n");
-                }
-                break;
-        }
-        
-        prompt.append("\n请给出专业、有趣、有深度的解说：");
         return prompt.toString();
     }
 
