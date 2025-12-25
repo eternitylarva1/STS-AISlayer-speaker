@@ -34,13 +34,14 @@ public class ExecuteSubscribePatch {
 
                     action_pre = action_current;
 
-                    String actionName = action_current.getClass().getSimpleName();
-                    String infoAction = "[执行]: " + actionName;
-                    logger.info(infoAction);
+                    // 移除调试日志，避免控制台信息过于混乱
+                    // String actionName = action_current.getClass().getSimpleName();
+                    // String infoAction = "[执行]: " + actionName;
+                    // logger.info(infoAction);
 
                 }
             } else {
-                logger.info("为啥没有行动?");
+                // logger.info("为啥没有行动?");
             }
         }
     }

@@ -20,7 +20,14 @@
       "commentaryEnabled": "Enable AI Commentary",
       "commentaryFrequency": "Commentary Frequency",
       "commentaryStyle": "Commentary Style",
-      "showCommentaryHistory": "Show Commentary History"
+      "showCommentaryHistory": "Show Commentary History",
+      "commentaryByCards": "Commentary by Cards (Check) or Turn End (Uncheck)",
+      "cardsPerCommentary": "Cards Per Commentary",
+      "introduceMonsters": "Introduce Monsters at Battle Start",
+      "detailedMonsterIntro": "Detailed Monster Intro (Check) or Simple Intro (Uncheck)",
+      "voiceEnabled": "Enable voice commentary",
+      "voiceVolume": "Voice volume (0.0-1.0)",
+      "autoClearVoiceCache": "Auto clear voice cache"
     }
   }
 }

@@ -513,7 +513,31 @@ public class AISlayer {
         } else {
             return false;
         }
+        
+        // 初始化语音配置
+        initializeVoiceSettings();
+        
         return true;
+    }
+    
+    /**
+     * 初始化语音设置
+     */
+    private static void initializeVoiceSettings() {
+        try {
+            // 从配置面板加载语音设置
+            aislayer.utils.VoiceGenerator.voiceEnabled = ConfigPanel.voiceEnabled;
+            aislayer.utils.VoiceGenerator.setVolume(ConfigPanel.voiceVolume);
+            
+            // 如果启用了自动清理缓存，则清理
+            if (ConfigPanel.autoClearVoiceCache) {
+                aislayer.utils.VoiceGenerator.clearCache();
+            }
+            
+        } catch (Exception e) {
+            // 语音初始化失败不影响主要功能
+            System.err.println("语音系统初始化失败: " + e.getMessage());
+        }
     }
 
     private static String handleApiUrl(String apiUrl) {

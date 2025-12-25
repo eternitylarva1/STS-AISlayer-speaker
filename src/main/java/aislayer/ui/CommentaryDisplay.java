@@ -110,10 +110,7 @@ public class CommentaryDisplay {
             }
         }
         
-        // 检查按键切换显示状态
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.F1)) {
-            isVisible = !isVisible;
-        }
+        // 快捷键已移除，按用户要求
     }
     
     /**
@@ -130,8 +127,8 @@ public class CommentaryDisplay {
             renderCurrentCommentary(sb);
         }
         
-        // 绘制历史记录（可选，用于调试）
-        if (Settings.isDebug) {
+        // 绘制历史记录（根据配置决定）
+        if (aislayer.panels.ConfigPanel.showCommentaryHistory) {
             renderHistory(sb);
         }
     }
@@ -163,17 +160,46 @@ public class CommentaryDisplay {
     }
     
     /**
-     * 渲染历史记录（调试用）
+     * 渲染历史记录
      * @param sb SpriteBatch
      */
     private void renderHistory(SpriteBatch sb) {
-        float historyY = y + height + padding;
-        float historyHeight = 20.0f * Settings.scale;
+        if (commentaryHistory.isEmpty()) {
+            return;
+        }
         
-        for (int i = 0; i < Math.min(5, commentaryHistory.size()); i++) {
+        float historyY = y + height + padding;
+        float historyHeight = 25.0f * Settings.scale;
+        float historyWidth = width + 100.0f * Settings.scale; // 稍微宽一点
+        float maxDisplay = Math.min(8, commentaryHistory.size()); // 最多显示8条
+        
+        // 绘制历史记录背景
+        Color historyBgColor = new Color(0.1f, 0.1f, 0.1f, 0.6f);
+        sb.setColor(historyBgColor);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY, historyWidth, maxDisplay * historyHeight);
+        
+        // 绘制历史记录边框
+        sb.setColor(Color.LIGHT_GRAY.r, Color.LIGHT_GRAY.g, Color.LIGHT_GRAY.b, 0.8f);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY, historyWidth, 1.0f * Settings.scale);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY + maxDisplay * historyHeight - 1.0f * Settings.scale, historyWidth, 1.0f * Settings.scale);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY, 1.0f * Settings.scale, maxDisplay * historyHeight);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x + historyWidth - 1.0f * Settings.scale, historyY, 1.0f * Settings.scale, maxDisplay * historyHeight);
+        
+        // 绘制标题
+        FontHelper.renderFontLeftTopAligned(sb, font, "解说历史记录:",
+                x + padding, historyY + maxDisplay * historyHeight - padding, Color.GOLD);
+        
+        // 绘制历史记录文本
+        for (int i = 0; i < maxDisplay; i++) {
             String historyText = commentaryHistory.get(i);
-            FontHelper.renderFontLeftTopAligned(sb, font, historyText, 
-                    x + padding, historyY + i * historyHeight, historyColor);
+            // 限制文本长度避免溢出
+            if (historyText.length() > 50) {
+                historyText = historyText.substring(0, 47) + "...";
+            }
+            
+            float textY = historyY + (maxDisplay - i - 1) * historyHeight + padding;
+            FontHelper.renderFontLeftTopAligned(sb, font, (i + 1) + ". " + historyText,
+                    x + padding, textY, historyColor);
         }
     }
     

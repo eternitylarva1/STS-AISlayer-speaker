@@ -78,36 +78,10 @@ public class CommentarySubscribe {
     }
     
     /**
-     * 检查快捷键
+     * 检查快捷键（已移除所有快捷键）
      */
     private static void checkHotkeys() {
-        // F1键切换解说显示
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.F1)) {
-            commentaryDisplay.toggleVisibility();
-            logger.info("解说显示切换: " + (commentaryDisplay.isVisible() ? "显示" : "隐藏"));
-        }
-        
-        // F2键清空解说历史
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.F2)) {
-            commentaryDisplay.clearHistory();
-            CommentaryUtils.clearCommentaryCache();
-            logger.info("解说历史已清空");
-        }
-        
-        // F3键重置解说系统
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.F3)) {
-            CommentaryUtils.resetCommentarySystem();
-            commentaryDisplay.reset();
-            logger.info("解说系统已重置");
-        }
-        
-        // F4键显示统计信息（调试模式）
-        if (Settings.isDebug && Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.F4)) {
-            String stats = "解说统计: " + CommentaryUtils.getCommentaryStats();
-            String displayStats = "显示统计: " + commentaryDisplay.getStats();
-            logger.info(stats);
-            logger.info(displayStats);
-        }
+        // 所有快捷键已移除，按用户要求
     }
     
     /**
@@ -121,6 +95,15 @@ public class CommentarySubscribe {
         try {
             CommentaryUtils.clearCommentaryQueue();
             commentaryDisplay.hideCurrentCommentary();
+            
+            // 重置战斗状态跟踪器
+            aislayer.utils.BattleStateTracker.getInstance().endBattle();
+            
+            // 根据配置决定是否清空历史记录
+            if (!aislayer.panels.ConfigPanel.showCommentaryHistory) {
+                commentaryDisplay.clearHistory();
+            }
+            
             logger.info("战斗开始，解说系统已重置");
         } catch (Exception e) {
             logger.error("战斗开始时重置解说系统失败", e);

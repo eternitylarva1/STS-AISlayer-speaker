@@ -15,5 +15,19 @@
     "Fascinating choice!",
     "Important rest time!",
     "New adventure awaits!"
+  ],
+  "monsterIntro": [
+    "A {0} appears ahead!",
+    "Beware, {0} incoming!",
+    "Encountered a {0}, prepare for battle!",
+    "Look, it's a {0}!",
+    "A {0} blocks the path!"
+  ],
+  "monsterIntroDetailed": [
+    "A {0} appears ahead! {1}",
+    "Beware, {0} incoming! {1}",
+    "Encountered a {0}, prepare for battle! {1}",
+    "Look, it's a {0}! {1}",
+    "A {0} blocks the path! {1}"
   ]
 }

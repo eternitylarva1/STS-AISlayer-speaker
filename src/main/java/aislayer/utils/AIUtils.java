@@ -10,6 +10,7 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -383,9 +384,20 @@ public class AIUtils {
         
         String actionType = actionInfo.getString("行动类型");
         
-        // 只为打牌行动提供详细解说
-        if ("打牌".equals(actionType)) {
-            // 明确说明玩家操作
+        // 获取战斗状态信息
+        BattleStateTracker tracker = BattleStateTracker.getInstance();
+        TurnData currentTurn = tracker.getCurrentTurnData();
+        
+        // 根据行动类型构建不同的提示词
+        if ("怪物介绍".equals(actionType)) {
+            // 怪物介绍的特殊处理
+            prompt.append("战斗开始了！前方出现了");
+            if (actionInfo.has("怪物信息")) {
+                prompt.append(actionInfo.getString("怪物信息"));
+            }
+            prompt.append("。噶人们，准备迎接挑战！请用主播口吻介绍这个敌人：");
+        } else if ("打牌".equals(actionType)) {
+            // 打牌行动的详细解说
             prompt.append("我打出了");
             if (actionInfo.has("使用的卡牌")) {
                 JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
@@ -401,13 +413,54 @@ public class AIUtils {
             }
             prompt.append("。");
             
-            // 背景信息
-            if (actionInfo.has("怪物意图")) {
-                prompt.append("背景：怪物").append(actionInfo.getString("怪物意图")).append("。");
+            // 添加战斗状态信息
+            if (currentTurn != null) {
+                prompt.append("这是本回合第").append(currentTurn.getPlayedCardsCount()).append("张牌。");
+                
+                // 添加怪物意图信息
+                if (actionInfo.has("怪物意图")) {
+                    prompt.append("怪物意图：").append(actionInfo.getString("怪物意图")).append("。");
+                }
+                
+                // 添加玩家状态信息
+                if (AbstractDungeon.player != null) {
+                    prompt.append("我还有").append(AbstractDungeon.player.energy.energy).append("点能量，")
+                          .append(AbstractDungeon.player.currentHealth).append("/").append(AbstractDungeon.player.maxHealth)
+                          .append("血量。");
+                }
             }
             
             // 明确要求解说动机
             prompt.append("噶人们，看这波操作！请用主播口吻解说我为什么这样打：");
+        } else if ("结束回合".equals(actionType)) {
+            // 回合结束的解说
+            prompt.append("回合结束了！");
+            
+            // 添加回合总结信息
+            if (currentTurn != null) {
+                prompt.append("本回合我打了").append(currentTurn.getPlayedCardsCount()).append("张牌。");
+                
+                // 添加玩家状态变化
+                if (AbstractDungeon.player != null) {
+                    prompt.append("当前状态：").append(AbstractDungeon.player.currentHealth).append("/")
+                          .append(AbstractDungeon.player.maxHealth).append("血量，")
+                          .append(AbstractDungeon.player.energy.energy).append("点能量。");
+                }
+                
+                // 添加怪物状态信息
+                Map<String, BattleStateTracker.MonsterState> monsters = tracker.getMonsterStates();
+                if (!monsters.isEmpty()) {
+                    prompt.append("敌人状态：");
+                    for (BattleStateTracker.MonsterState monster : monsters.values()) {
+                        if (!monster.isDead && !monster.isDying) {
+                            prompt.append(monster.monsterName).append("(").append(monster.currentHealth)
+                                  .append("/").append(monster.maxHealth).append("HP) ");
+                        }
+                    }
+                }
+            }
+            
+            prompt.append("噶人们，这回合打得怎么样？请用主播口吻总结：");
         } else {
             // 其他行动类型的简化处理
             prompt.append("噶人们，看这波").append(actionType).append("操作！请用主播口吻解说：");

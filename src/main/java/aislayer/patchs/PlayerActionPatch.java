@@ -1,10 +1,13 @@
 package aislayer.patchs;
 
+import aislayer.panels.ConfigPanel;
+import aislayer.utils.BattleStateTracker;
 import aislayer.utils.CommentaryUtils;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePatch;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePostfixPatch;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
 
@@ -32,8 +35,16 @@ public class PlayerActionPatch {
         }
         
         try {
-            // 触发解说
-            CommentaryUtils.triggerCommentary("打牌", card, target);
+            // 更新战斗状态跟踪器
+            BattleStateTracker tracker = BattleStateTracker.getInstance();
+            if (tracker.isInBattle()) {
+                tracker.recordCardPlay(card, target);
+            }
+            
+            // 根据配置决定是否触发解说
+            if (CommentaryUtils.shouldTriggerCommentaryByCards()) {
+                CommentaryUtils.triggerCommentary("打牌", card, target);
+            }
         } catch (Exception e) {
             // 静默处理异常，避免影响游戏正常进行
         }

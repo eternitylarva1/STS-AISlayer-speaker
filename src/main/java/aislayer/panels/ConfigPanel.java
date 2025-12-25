@@ -39,6 +39,33 @@ public class ConfigPanel extends EasyConfigPanel {
     public static String commentaryStyle = "幽默";
     public static boolean showCommentaryHistory = false;
     public static int commentaryTimeout = 10; // API调用超时时间（秒）
+    
+    // 新增解说增强配置
+    public static boolean commentaryByCards = true; // 解说模式：true=按牌数解说，false=回合结束解说
+    public static int cardsPerCommentary = 3; // 每次解说需要的牌数（按牌数模式）
+    public static boolean introduceMonsters = true; // 是否在战斗开始时介绍怪物
+    public static boolean detailedMonsterIntro = true; // 怪物介绍详细程度：true=详细，false=简单
+    
+    // 语音配置
+    public static boolean voiceEnabled = true; // 是否启用语音解说
+    public static float voiceVolume = 0.8f; // 语音音量 (0.0 - 1.0)
+    public static boolean autoClearVoiceCache = false; // 是否自动清理语音缓存
+    
+    /**
+     * 检查是否为按牌数解说模式
+     * @return 是否为按牌数解说模式
+     */
+    public static boolean isByCardsMode() {
+        return commentaryByCards;
+    }
+    
+    /**
+     * 检查是否为回合结束解说模式
+     * @return 是否为回合结束解说模式
+     */
+    public static boolean isByTurnEndMode() {
+        return !commentaryByCards;
+    }
 
     public ConfigPanel() {
         super("aislayer", getUIStrings(), "config");
@@ -46,7 +73,28 @@ public class ConfigPanel extends EasyConfigPanel {
         setupTextField("apiKey_1", 750, 100);
         setupTextField("apiUrl_2", 500, 100);
         setupTextField("apiKey_2", 750, 100);
+        
+        // 设置语音音量范围 (0.0 - 1.0)
+        setNumberRange("voiceVolume", 0.0f, 1.0f);
+        
         setPadding(30.0F);
+    }
+    
+    /**
+     * 设置语音音量，确保在有效范围内
+     * @param volume 音量值
+     */
+    public static void setVoiceVolume(float volume) {
+        // 确保音量在 0.0 - 1.0 范围内
+        voiceVolume = Math.max(0.0f, Math.min(1.0f, volume));
+    }
+    
+    /**
+     * 获取语音音量
+     * @return 音量值 (0.0 - 1.0)
+     */
+    public static float getVoiceVolume() {
+        return voiceVolume;
     }
 
     private static UIStrings getUIStrings() {
