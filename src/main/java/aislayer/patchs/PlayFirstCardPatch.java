@@ -45,6 +45,7 @@ public class PlayFirstCardPatch {
                     tracker.updateConfig(ConfigPanel.cardsPerCommentary,
                                        ConfigPanel.introduceMonsters,
                                        ConfigPanel.detailedMonsterIntro);
+                    tracker.startNewTurn();
                     
                     // 触发怪物介绍
                     CommentaryUtils.triggerMonsterIntroduction();

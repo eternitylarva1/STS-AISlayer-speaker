@@ -468,10 +468,34 @@ public class CommentaryUtils {
         }
         logger.info("- 是按牌数模式");
         
-        // 检查战斗状态跟踪器
+        // 获取战斗状态跟踪器
         BattleStateTracker tracker = BattleStateTracker.getInstance();
-        boolean shouldTrigger = tracker.shouldTriggerCommentaryByCards();
-        logger.info("- 战斗状态检查：" + shouldTrigger);
+        TurnData currentTurn = tracker.getCurrentTurnData();
+        
+        // 如果当前回合数据为空，自动初始化
+        if (currentTurn == null) {
+            logger.info("- 当前回合数据为空，自动初始化");
+            try {
+                tracker.startBattle();
+                tracker.updateConfig(ConfigPanel.cardsPerCommentary,
+                                   ConfigPanel.introduceMonsters,
+                                   ConfigPanel.detailedMonsterIntro);
+                tracker.startNewTurn();
+                currentTurn = tracker.getCurrentTurnData();
+                logger.info("- 自动初始化完成");
+            } catch (Exception e) {
+                logger.error("- 自动初始化失败", e);
+                return false;
+            }
+        }
+        
+        int cardsPlayed = currentTurn.getPlayedCardsCount();
+        int cardsPerCommentary = ConfigPanel.cardsPerCommentary;
+        
+        // 修复序数问题：使用模运算来判断是否达到触发条件
+        // 例如：每3张牌解说一次，就在第3、6、9张牌时触发
+        boolean shouldTrigger = (cardsPlayed % cardsPerCommentary) == 0;
+        logger.info("- 已打牌数：" + cardsPlayed + "，阈值：" + cardsPerCommentary + "，触发：" + shouldTrigger);
         
         return shouldTrigger;
     }
@@ -545,7 +569,7 @@ public class CommentaryUtils {
     
     /**
      * 获取语音统计信息
-     * @return 语音统计信息
+     * @return 语音统计
      */
     public static String getVoiceStats() {
         return VoiceGenerator.getCacheStats();

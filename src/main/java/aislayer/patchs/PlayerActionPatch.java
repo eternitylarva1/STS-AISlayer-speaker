@@ -80,15 +80,10 @@ public class PlayerActionPatch {
             return false;
         }
         
-        // 检查卡牌是否在手牌中（已经打出的卡牌应该不在手牌中）
-        if (com.megacrit.cardcrawl.dungeons.AbstractDungeon.player.hand.group.contains(card)) {
-            return false;
-        }
-        
-        // 对于需要目标的卡牌，检查目标是否有效
-        if (card.target != AbstractCard.CardTarget.NONE && target == null) {
-            return false;
-        }
+        // 移除目标检查，因为：
+        // 1. 任何类型的卡牌目标都可能为null
+        // 2. 后续代码（BattleStateTracker和TurnData）已经正确处理null目标
+        // 3. 过于严格的目标检查会阻止某些卡牌被统计
         
         return true;
     }

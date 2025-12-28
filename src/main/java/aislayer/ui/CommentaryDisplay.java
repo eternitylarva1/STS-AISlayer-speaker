@@ -91,11 +91,13 @@ public class CommentaryDisplay {
      * @param commentary 解说内容
      */
     private void addToHistory(String commentary) {
-        commentaryHistory.add(0, commentary); // 添加到开头
-        
-        // 限制历史记录大小
-        while (commentaryHistory.size() > maxHistorySize) {
-            commentaryHistory.remove(commentaryHistory.size() - 1);
+        synchronized (commentaryHistory) {
+            commentaryHistory.add(0, commentary); // 添加到开头
+            
+            // 限制历史记录大小
+            while (commentaryHistory.size() > maxHistorySize) {
+                commentaryHistory.remove(commentaryHistory.size() - 1);
+            }
         }
     }
     
@@ -168,10 +170,16 @@ public class CommentaryDisplay {
             return;
         }
         
+        // 创建副本避免并发修改异常
+        ArrayList<String> historyCopy;
+        synchronized (commentaryHistory) {
+            historyCopy = new ArrayList<>(commentaryHistory);
+        }
+        
         float historyY = y + height + padding;
         float historyHeight = 25.0f * Settings.scale;
         float historyWidth = width + 100.0f * Settings.scale; // 稍微宽一点
-        float maxDisplay = Math.min(8, commentaryHistory.size()); // 最多显示8条
+        float maxDisplay = Math.min(8, historyCopy.size()); // 最多显示8条
         
         // 绘制历史记录背景
         Color historyBgColor = new Color(0.1f, 0.1f, 0.1f, 0.6f);
@@ -191,7 +199,7 @@ public class CommentaryDisplay {
         
         // 绘制历史记录文本
         for (int i = 0; i < maxDisplay; i++) {
-            String historyText = commentaryHistory.get(i);
+            String historyText = historyCopy.get(i);
             // 限制文本长度避免溢出
             if (historyText.length() > 50) {
                 historyText = historyText.substring(0, 47) + "...";
@@ -207,7 +215,9 @@ public class CommentaryDisplay {
      * 清空历史记录
      */
     public void clearHistory() {
-        commentaryHistory.clear();
+        synchronized (commentaryHistory) {
+            commentaryHistory.clear();
+        }
     }
     
     /**
@@ -215,7 +225,9 @@ public class CommentaryDisplay {
      * @return 历史记录列表
      */
     public ArrayList<String> getHistory() {
-        return new ArrayList<>(commentaryHistory);
+        synchronized (commentaryHistory) {
+            return new ArrayList<>(commentaryHistory);
+        }
     }
     
     /**

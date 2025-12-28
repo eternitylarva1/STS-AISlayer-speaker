@@ -42,8 +42,6 @@ import static aislayer.AISlayer.allCards;
 import static aislayer.AISlayer.allDescriptions;
 import static aislayer.AISlayer.allPotions;
 import static aislayer.AISlayer.allRelics;
-import static aislayer.AISlayer.apiKey;
-import static aislayer.AISlayer.apiUrl;
 import static aislayer.AISlayer.getCardInfo;
 import static aislayer.AISlayer.getMapPaths;
 import static aislayer.AISlayer.handleDescription;
@@ -219,7 +217,6 @@ public class AIUtils {
                     ArrayList<MapRoomNode> mapPath = mapPaths.get(selectIndexes.getInt(0));
                     MapRoomNode mapNode = mapPath.get(0);
                     mapNode.hb.clicked = true;
-                    lockedHoveredHitbox = mapNode.hb;
                     AbstractDungeon.dungeonMapScreen.clicked = true;
                     InputHelper.justClickedLeft = true;
                     break;
@@ -287,12 +284,15 @@ public class AIUtils {
      */
     private static String callCommentaryAPI(JSONObject actionInfo) throws IOException {
         JSONObject requestBody = new JSONObject();
+        long requestStartTime = System.currentTimeMillis();
         
         try {
             requestBody.put("model", model);
             
             // 构建解说提示词
             String prompt = buildCommentaryPrompt(actionInfo);
+            logger.info("=== AI解说调试信息 ===");
+            logger.info("发送给AI的提示词: " + prompt);
             
             JSONArray messages = new JSONArray();
             JSONObject systemMessage = new JSONObject();
@@ -350,13 +350,20 @@ public class AIUtils {
                         response.append(responseLine.trim());
                     }
                     
+                    long responseReceivedTime = System.currentTimeMillis();
+                    long requestDuration = responseReceivedTime - requestStartTime;
+                    logger.info("AI请求耗时: " + requestDuration + "ms");
+                    
                     JSONObject responseJSON = new JSONObject(response.toString());
-                    return responseJSON
+                    String commentary = responseJSON
                             .getJSONArray("choices")
                             .getJSONObject(0)
                             .getJSONObject("message")
                             .getString("content")
                             .trim();
+                    
+                    logger.info("AI返回的解说: " + commentary);
+                    return commentary;
                 } catch (Exception e) {
                     logger.error("解析解说响应失败", e);
                     return "精彩的行动！";
@@ -366,10 +373,14 @@ public class AIUtils {
                 return "精彩的行动！";
             }
         } catch (SocketTimeoutException e) {
-            logger.info("API调用超时，使用默认解说");
+            long responseReceivedTime = System.currentTimeMillis();
+            long requestDuration = responseReceivedTime - requestStartTime;
+            logger.info("AI请求超时，耗时: " + requestDuration + "ms");
             return "精彩的行动！";
         } catch (Exception e) {
-            logger.error("获取解说响应时发生错误", e);
+            long responseReceivedTime = System.currentTimeMillis();
+            long requestDuration = responseReceivedTime - requestStartTime;
+            logger.error("获取解说响应时发生错误，耗时: " + requestDuration + "ms", e);
             return "精彩的行动！";
         }
     }
@@ -701,11 +712,10 @@ public class AIUtils {
     }
 
     private static JSONObject getAllKeywords() {
-        JSONObject allKeywords = new JSONObject();
-        JSONObject keywords = new JSONObject(GameDictionary.keywords);
-        for (String keywordString : keywords.keySet()) {
+        JSONObject allKeywords = new JSONObject(GameDictionary.keywords);
+        for (String keywordString : allKeywords.keySet()) {
             if (allDescriptions.toString().contains(keywordString)) {
-                allKeywords.put(keywordString, keywords.getString(keywordString));
+                allKeywords.put(keywordString, allKeywords.getString(keywordString));
             }
         }
         allDescriptions.clear();
