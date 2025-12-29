@@ -38,23 +38,13 @@ import com.megacrit.cardcrawl.ui.campfire.AbstractCampfireOption;
 import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import com.megacrit.cardcrawl.vfx.combat.LightBulbEffect;
 
-import static aislayer.AISlayer.allCards;
-import static aislayer.AISlayer.allDescriptions;
-import static aislayer.AISlayer.allPotions;
-import static aislayer.AISlayer.allRelics;
-import static aislayer.AISlayer.getCardInfo;
-import static aislayer.AISlayer.getMapPaths;
-import static aislayer.AISlayer.handleDescription;
-import static aislayer.AISlayer.knownCards;
-import static aislayer.AISlayer.knownKeywords;
-import static aislayer.AISlayer.knownPotions;
-import static aislayer.AISlayer.knownRelics;
-import static aislayer.AISlayer.model;
 import aislayer.actions.AIEndTurnAction;
 import aislayer.actions.AIThinkAction;
 import aislayer.actions.AIUseCardAction;
 import aislayer.actions.AIUsePotionAction;
 import aislayer.patchs.SelectCampfirePatch;
+
+import static aislayer.AISlayer.*;
 
 public class AIUtils {
 
@@ -409,23 +399,34 @@ public class AIUtils {
             prompt.append("。噶人们，准备迎接挑战！请用主播口吻介绍这个敌人：");
         } else if ("打牌".equals(actionType)) {
             // 打牌行动的详细解说
-            prompt.append("我打出了");
-            if (actionInfo.has("使用的卡牌")) {
-                JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
-                prompt.append(cardInfo.getString("名称"));
-                if (cardInfo.has("描述")) {
-                    prompt.append("（").append(cardInfo.getString("描述")).append("）");
+            // 添加本回合所有打出的牌信息
+            if (currentTurn != null && currentTurn.playedCards != null && !currentTurn.playedCards.isEmpty()) {
+                prompt.append("本回合我打出了");
+                for (int i = 0; i < currentTurn.playedCards.size(); i++) {
+                    TurnData.CardPlayRecord cardRecord = currentTurn.playedCards.get(i);
+                    if (i > 0) {
+                        prompt.append("、");
+                    }
+                    prompt.append(cardRecord.cardName);
                 }
-            }
-            
-            // 目标信息
-            if (actionInfo.has("目标")) {
-                prompt.append("攻击").append(actionInfo.getString("目标"));
-            }
-            prompt.append("。");
-            
-            // 添加战斗状态信息
-            if (currentTurn != null) {
+                prompt.append("。");
+                
+                // 特别说明当前这张牌
+                if (actionInfo.has("使用的卡牌")) {
+                    JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
+                    prompt.append("刚刚打出的是");
+                    prompt.append(cardInfo.getString("名称"));
+                    if (cardInfo.has("描述")) {
+                        prompt.append("（").append(cardInfo.getString("描述")).append("）");
+                    }
+                    
+                    // 目标信息
+                    if (actionInfo.has("目标")) {
+                        prompt.append("攻击").append(actionInfo.getString("目标"));
+                    }
+                    prompt.append("。");
+                }
+                
                 prompt.append("这是本回合第").append(currentTurn.getPlayedCardsCount()).append("张牌。");
                 
                 // 添加怪物意图信息
@@ -439,6 +440,22 @@ public class AIUtils {
                           .append(AbstractDungeon.player.currentHealth).append("/").append(AbstractDungeon.player.maxHealth)
                           .append("血量。");
                 }
+            } else {
+                // 如果没有回合数据，回退到原来的逻辑
+                prompt.append("我打出了");
+                if (actionInfo.has("使用的卡牌")) {
+                    JSONObject cardInfo = actionInfo.getJSONObject("使用的卡牌");
+                    prompt.append(cardInfo.getString("名称"));
+                    if (cardInfo.has("描述")) {
+                        prompt.append("（").append(cardInfo.getString("描述")).append("）");
+                    }
+                }
+                
+                // 目标信息
+                if (actionInfo.has("目标")) {
+                    prompt.append("攻击").append(actionInfo.getString("目标"));
+                }
+                prompt.append("。");
             }
             
             // 明确要求解说动机
