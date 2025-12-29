@@ -492,9 +492,9 @@ public class CommentaryUtils {
         int cardsPlayed = currentTurn.getPlayedCardsCount();
         int cardsPerCommentary = ConfigPanel.cardsPerCommentary;
         
-        // 修复序数问题：使用模运算来判断是否达到触发条件
+        // 修复序数问题：使用直接比较来判断是否达到触发条件
         // 例如：每3张牌解说一次，就在第3、6、9张牌时触发
-        boolean shouldTrigger = (cardsPlayed % cardsPerCommentary) == 0;
+        boolean shouldTrigger = (cardsPlayed >= cardsPerCommentary) && (cardsPlayed % cardsPerCommentary == 0);
         logger.info("- 已打牌数：" + cardsPlayed + "，阈值：" + cardsPerCommentary + "，触发：" + shouldTrigger);
         
         return shouldTrigger;
