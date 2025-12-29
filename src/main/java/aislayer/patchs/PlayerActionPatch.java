@@ -3,6 +3,7 @@ package aislayer.patchs;
 import aislayer.panels.ConfigPanel;
 import aislayer.utils.BattleStateTracker;
 import aislayer.utils.CommentaryUtils;
+import aislayer.utils.TurnData;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePatch;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePostfixPatch;
 import com.megacrit.cardcrawl.cards.AbstractCard;
@@ -42,7 +43,10 @@ public class PlayerActionPatch {
             }
             
             // 根据配置决定是否触发解说
-            if (CommentaryUtils.shouldTriggerCommentaryByCards()) {
+            // 传入当前已打牌数，确保使用正确的牌数进行判断
+            TurnData currentTurn = tracker.getCurrentTurnData();
+            int cardsPlayed = currentTurn != null ? currentTurn.getPlayedCardsCount() : 0;
+            if (CommentaryUtils.shouldTriggerCommentaryByCardsWithCount(cardsPlayed)) {
                 CommentaryUtils.triggerCommentary("打牌", card, target);
             }
         } catch (Exception e) {

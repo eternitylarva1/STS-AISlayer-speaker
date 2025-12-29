@@ -501,6 +501,36 @@ public class CommentaryUtils {
     }
     
     /**
+     * 检查是否应该按牌数触发解说（使用传入的牌数）
+     * @param cardsPlayed 已打出的牌数
+     * @return 是否应该触发
+     */
+    public static boolean shouldTriggerCommentaryByCardsWithCount(int cardsPlayed) {
+        logger.info("检查按牌数解说模式（传入牌数：" + cardsPlayed + "）");
+        
+        if (!shouldTriggerCommentary()) {
+            logger.info("- 基础条件不满足");
+            return false;
+        }
+        
+        // 检查解说模式
+        if (!ConfigPanel.isByCardsMode()) {
+            logger.info("- 不是按牌数模式");
+            return false; // 不是按牌数模式
+        }
+        logger.info("- 是按牌数模式");
+        
+        int cardsPerCommentary = ConfigPanel.cardsPerCommentary;
+        
+        // 修复序数问题：使用直接比较来判断是否达到触发条件
+        // 例如：每3张牌解说一次，就在第3、6、9张牌时触发
+        boolean shouldTrigger = (cardsPlayed >= cardsPerCommentary) && (cardsPlayed % cardsPerCommentary == 0);
+        logger.info("- 已打牌数：" + cardsPlayed + "，阈值：" + cardsPerCommentary + "，触发：" + shouldTrigger);
+        
+        return shouldTrigger;
+    }
+    
+    /**
      * 检查是否应该在回合结束触发解说
      * @return 是否应该触发
      */
