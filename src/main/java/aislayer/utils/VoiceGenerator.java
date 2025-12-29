@@ -59,10 +59,15 @@ public class VoiceGenerator {
             return;
         }
         
+        // 记录语音请求开始时间
+        long voiceRequestStartTime = System.currentTimeMillis();
+        logger.info("=== 语音调试信息 ===");
+        logger.info("开始请求语音: " + text);
+        
         // 异步处理，避免阻塞游戏线程
         CompletableFuture.runAsync(() -> {
             try {
-                generateAndPlayVoiceSync(text);
+                generateAndPlayVoiceSync(text, voiceRequestStartTime);
             } catch (Exception e) {
                 logger.error("语音生成播放失败", e);
             }
@@ -72,8 +77,9 @@ public class VoiceGenerator {
     /**
      * 同步生成并播放语音
      * @param text 要转换的文本
+     * @param voiceRequestStartTime 语音请求开始时间
      */
-    private static void generateAndPlayVoiceSync(String text) {
+    private static void generateAndPlayVoiceSync(String text, long voiceRequestStartTime) {
         try {
             // 检查缓存
             String cacheKey = generateCacheKey(text);
@@ -81,15 +87,22 @@ public class VoiceGenerator {
             
             if (audioFile == null || !audioFile.exists()) {
                 // 生成新的语音
+                long voiceGenStartTime = System.currentTimeMillis();
                 audioFile = generateVoice(text);
+                long voiceGenEndTime = System.currentTimeMillis();
+                logger.info("语音生成耗时: " + (voiceGenEndTime - voiceGenStartTime) + "ms");
+                
                 if (audioFile != null) {
                     voiceCache.put(cacheKey, audioFile);
                 }
+            } else {
+                logger.info("使用语音缓存: " + audioFile.getName());
             }
             
             if (audioFile != null && audioFile.exists()) {
                 // 播放语音
-                playAudio(audioFile);
+                long voicePlayStartTime = System.currentTimeMillis();
+                playAudio(audioFile, voiceRequestStartTime, voicePlayStartTime);
             }
             
         } catch (Exception e) {
@@ -206,8 +219,10 @@ public class VoiceGenerator {
     /**
      * 播放音频文件
      * @param audioFile 音频文件
+     * @param voiceRequestStartTime 语音请求开始时间
+     * @param voicePlayStartTime 语音播放开始时间
      */
-    private static void playAudio(File audioFile) {
+    private static void playAudio(File audioFile, long voiceRequestStartTime, long voicePlayStartTime) {
         try {
             if (isPlaying) {
                 logger.info("正在播放其他语音，跳过当前播放");
@@ -217,7 +232,7 @@ public class VoiceGenerator {
             isPlaying = true;
             
             // 只使用Java Sound API播放
-            if (!tryPlayWithJavaSound(audioFile)) {
+            if (!tryPlayWithJavaSound(audioFile, voiceRequestStartTime, voicePlayStartTime)) {
                 logger.error("Java Sound API播放失败，无法播放音频: " + audioFile.getName());
             }
             
@@ -230,9 +245,11 @@ public class VoiceGenerator {
     /**
      * 尝试使用Java Sound API播放
      * @param audioFile 音频文件
+     * @param voiceRequestStartTime 语音请求开始时间
+     * @param voicePlayStartTime 语音播放开始时间
      * @return 是否成功播放
      */
-    private static boolean tryPlayWithJavaSound(File audioFile) {
+    private static boolean tryPlayWithJavaSound(File audioFile, long voiceRequestStartTime, long voicePlayStartTime) {
         try {
             try (AudioInputStream audioStream = getAudioInputStream(audioFile)) {
                 AudioFormat format = audioStream.getFormat();
@@ -241,6 +258,10 @@ public class VoiceGenerator {
                 Clip clip = (Clip) AudioSystem.getLine(info);
                 clip.open(audioStream);
                 
+                // 获取音频时长（毫秒）
+                long audioDuration = (long) (clip.getMicrosecondLength() / 1000.0);
+                logger.info("语音时长: " + audioDuration + "ms");
+                
                 // 设置音量
                 if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
                     FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
@@ -248,8 +269,15 @@ public class VoiceGenerator {
                     gainControl.setValue(dB);
                 }
                 
+                long actualPlayStartTime = System.currentTimeMillis();
+                long voiceToPlayDelay = actualPlayStartTime - voiceRequestStartTime;
+                logger.info("从请求语音到开始播放耗时: " + voiceToPlayDelay + "ms");
+                
                 clip.addLineListener(event -> {
                     if (event.getType() == LineEvent.Type.STOP) {
+                        long actualPlayEndTime = System.currentTimeMillis();
+                        long totalVoiceTime = actualPlayEndTime - voiceRequestStartTime;
+                        logger.info("语音播放完成，从请求到播放完成总耗时: " + totalVoiceTime + "ms");
                         clip.close();
                         isPlaying = false;
                     }
