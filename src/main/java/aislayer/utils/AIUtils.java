@@ -397,7 +397,14 @@ public class AIUtils {
             if (actionInfo.has("怪物信息")) {
                 prompt.append(actionInfo.getString("怪物信息"));
             }
-            prompt.append("。噶人们，准备迎接挑战！请用主播口吻介绍这个敌人：");
+            prompt.append("。");
+            
+            // 添加怪物描述信息
+            if (actionInfo.has("怪物描述")) {
+                prompt.append("怪物详情：").append(actionInfo.getString("怪物描述")).append("。");
+            }
+            
+            prompt.append("噶人们，准备迎接挑战！请用主播口吻介绍这个敌人：");
         } else if ("打牌".equals(actionType)) {
             // 打牌行动的详细解说
             // 添加本回合所有打出的牌信息
