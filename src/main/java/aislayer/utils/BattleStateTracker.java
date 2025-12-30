@@ -106,10 +106,14 @@ public class BattleStateTracker {
      * 开始新回合
      */
     public void startNewTurn() {
+        org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger(BattleStateTracker.class.getName());
+        logger.info("startNewTurn调用：inBattle=" + inBattle);
+        
         if (!inBattle) return;
         
         // 结束上一回合
         if (currentTurnData != null) {
+            logger.info("结束上一回合：turn=" + currentTurn + ", playedCards=" + currentTurnData.getPlayedCardsCount());
             currentTurnData.endTurn();
             turnHistory.add(currentTurnData);
         }
@@ -117,6 +121,7 @@ public class BattleStateTracker {
         // 开始新回合
         currentTurn++;
         currentTurnData = new TurnData(currentTurn);
+        logger.info("开始新回合：turn=" + currentTurn + ", currentTurnData=" + (currentTurnData != null ? "已创建" : "null"));
         
         // 记录玩家初始状态
         if (AbstractDungeon.player != null) {
@@ -132,7 +137,15 @@ public class BattleStateTracker {
      * 结束当前回合
      */
     public void endCurrentTurn() {
-        if (!inBattle || currentTurnData == null) return;
+        org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger(BattleStateTracker.class.getName());
+        logger.info("endCurrentTurn调用：inBattle=" + inBattle + ", currentTurnData=" + (currentTurnData != null ? "存在" : "null"));
+        
+        if (!inBattle || currentTurnData == null) {
+            logger.info("endCurrentTurn提前返回：inBattle=" + inBattle + ", currentTurnData=" + (currentTurnData != null ? "存在" : "null"));
+            return;
+        }
+        
+        logger.info("结束回合：turn=" + currentTurn + ", playedCards=" + currentTurnData.getPlayedCardsCount());
         
         // 记录玩家结束状态
         if (AbstractDungeon.player != null) {
@@ -143,6 +156,7 @@ public class BattleStateTracker {
         currentTurnData.endTurn();
         turnHistory.add(currentTurnData);
         currentTurnData = null;
+        logger.info("currentTurnData已清空");
     }
     
     /**

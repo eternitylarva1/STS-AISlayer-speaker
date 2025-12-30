@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 
+import com.megacrit.cardcrawl.actions.unique.WhirlwindAction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -436,10 +437,11 @@ public class AIUtils {
                 
                 // 添加玩家状态信息
                 if (AbstractDungeon.player != null) {
-                    prompt.append("我还有").append(AbstractDungeon.player.energy.energy).append("点能量，")
+                    prompt.append("我还有").append(EnergyPanel.totalCount).append("点能量，")
                           .append(AbstractDungeon.player.currentHealth).append("/").append(AbstractDungeon.player.maxHealth)
                           .append("血量。");
                 }
+
             } else {
                 // 如果没有回合数据，回退到原来的逻辑
                 prompt.append("我打出了");
@@ -464,27 +466,164 @@ public class AIUtils {
             // 回合结束的解说
             prompt.append("回合结束了！");
             
-            // 添加回合总结信息
-            if (currentTurn != null) {
-                prompt.append("本回合我打了").append(currentTurn.getPlayedCardsCount()).append("张牌。");
+            // 优先从actionInfo中获取回合数据（解决异步问题）
+            boolean hasActionInfoData = false;
+            
+            if (actionInfo.has("本回合打牌数")) {
+                hasActionInfoData = true;
+                int cardsCount = actionInfo.getInt("本回合打牌数");
+                prompt.append("本回合我打了").append(cardsCount).append("张牌。");
                 
-                // 添加玩家状态变化
-                if (AbstractDungeon.player != null) {
-                    prompt.append("当前状态：").append(AbstractDungeon.player.currentHealth).append("/")
-                          .append(AbstractDungeon.player.maxHealth).append("血量，")
-                          .append(AbstractDungeon.player.energy.energy).append("点能量。");
+                // 添加本回合打出的具体牌信息
+                if (actionInfo.has("本回合打牌")) {
+                    org.json.JSONArray playedCards = actionInfo.getJSONArray("本回合打牌");
+                    if (playedCards.length() > 0) {
+                        prompt.append("具体打出了：");
+                        for (int i = 0; i < playedCards.length(); i++) {
+                            if (i > 0) {
+                                prompt.append("、");
+                            }
+                            org.json.JSONObject cardObj = playedCards.getJSONObject(i);
+                            prompt.append(cardObj.getString("cardName"));
+                            
+                            // 添加费用信息
+                            if (cardObj.has("cost")) {
+                                int cost = cardObj.getInt("cost");
+                                if (cost >= 0) {
+                                    prompt.append("[").append(cost).append("费]");
+                                } else {
+                                    prompt.append("[X费]");
+                                }
+                            }
+                            
+                            // 添加卡牌描述信息
+                            if (cardObj.has("description")) {
+                                String description = cardObj.getString("description");
+                                if (description != null && !description.isEmpty()) {
+                                    prompt.append("（").append(description).append("）");
+                                    logger.info("结束回合解说：添加卡牌描述 " + cardObj.getString("cardName") + ": " + description);
+                                } else {
+                                    logger.warn("结束回合解说：卡牌描述为空 " + cardObj.getString("cardName"));
+                                }
+                            } else {
+                                logger.warn("结束回合解说：卡牌对象没有description字段 " + cardObj.getString("cardName"));
+                            }
+                            
+                            // 添加目标信息
+                            if (cardObj.has("targetMonster")) {
+                                prompt.append("(攻击").append(cardObj.getString("targetMonster")).append(")");
+                            }
+                        }
+                        prompt.append("。");
+                    }
+                }
+                
+                // 添加玩家状态信息
+                if (actionInfo.has("玩家状态")) {
+                    org.json.JSONObject playerState = actionInfo.getJSONObject("玩家状态");
+                    prompt.append("当前状态：").append(playerState.getInt("currentHealth")).append("/")
+                          .append(playerState.getInt("maxHealth")).append("血量，")
+                          .append(playerState.getInt("energy")).append("点能量。");
                 }
                 
                 // 添加怪物状态信息
-                Map<String, BattleStateTracker.MonsterState> monsters = tracker.getMonsterStates();
-                if (!monsters.isEmpty()) {
-                    prompt.append("敌人状态：");
-                    for (BattleStateTracker.MonsterState monster : monsters.values()) {
-                        if (!monster.isDead && !monster.isDying) {
-                            prompt.append(monster.monsterName).append("(").append(monster.currentHealth)
-                                  .append("/").append(monster.maxHealth).append("HP) ");
+                if (actionInfo.has("怪物状态")) {
+                    org.json.JSONArray monsters = actionInfo.getJSONArray("怪物状态");
+                    if (monsters.length() > 0) {
+                        prompt.append("敌人状态：");
+                        for (int i = 0; i < monsters.length(); i++) {
+                            org.json.JSONObject monster = monsters.getJSONObject(i);
+                            prompt.append(monster.getString("name")).append("(")
+                                  .append(monster.getInt("currentHealth")).append("/")
+                                  .append(monster.getInt("maxHealth"));
+                            
+                            // 添加格挡信息
+                            if (monster.has("currentBlock") && monster.getInt("currentBlock") > 0) {
+                                prompt.append(", ").append(monster.getInt("currentBlock")).append("格挡");
+                            }
+                            
+                            prompt.append("HP)");
+                            
+                            // 添加意图信息 - 确保每个怪物都有意图信息
+                            if (monster.has("intent")) {
+                                String intent = monster.getString("intent");
+                                String intentDesc = getIntentDescription(intent);
+                                if (!intentDesc.isEmpty()) {
+                                    prompt.append("准备").append(intentDesc);
+                                    
+                                    // 添加意图伤害
+                                    if (monster.has("intentDamage") && monster.getInt("intentDamage") > 0) {
+                                        prompt.append("(").append(monster.getInt("intentDamage")).append("伤害)");
+                                    }
+                                } else {
+                                    // 如果意图描述为空，至少显示原始意图
+                                    logger.info("结束回合解说：怪物 " + monster.getString("name") + " 意图描述为空，原始意图: " + intent);
+                                    prompt.append("意图: ").append(intent);
+                                }
+                            } else {
+                                logger.warn("结束回合解说：怪物 " + monster.getString("name") + " 没有意图信息");
+                            }
+                            
+                            if (i < monsters.length() - 1) {
+                                prompt.append("，");
+                            }
+                        }
+                        prompt.append("。");
+                        logger.info("结束回合解说：处理了 " + monsters.length() + " 个怪物的状态信息");
+                    } else {
+                        logger.warn("结束回合解说：怪物状态数组为空");
+                    }
+                } else {
+                    logger.warn("结束回合解说：actionInfo中没有怪物状态信息");
+                }
+            }
+            
+            // 如果actionInfo中没有数据，回退到原来的逻辑
+            if (!hasActionInfoData) {
+                logger.info("结束回合解说调试：currentTurn=" + (currentTurn != null ? "存在" : "null"));
+                if (currentTurn != null) {
+                    logger.info("结束回合解说调试：playedCardsCount=" + currentTurn.getPlayedCardsCount());
+                    logger.info("结束回合解说调试：playedCards=" + (currentTurn.playedCards != null ? currentTurn.playedCards.size() : "null"));
+                }
+                logger.info("结束回合解说调试：tracker.inBattle=" + tracker.isInBattle());
+                
+                // 添加回合总结信息
+                if (currentTurn != null) {
+                    prompt.append("本回合我打了").append(currentTurn.getPlayedCardsCount()).append("张牌。");
+                    
+                    // 添加本回合打出的具体牌信息
+                    if (currentTurn.playedCards != null && !currentTurn.playedCards.isEmpty()) {
+                        prompt.append("具体打出了：");
+                        for (int i = 0; i < currentTurn.playedCards.size(); i++) {
+                            TurnData.CardPlayRecord cardRecord = currentTurn.playedCards.get(i);
+                            if (i > 0) {
+                                prompt.append("、");
+                            }
+                            prompt.append(cardRecord.cardName);
+                        }
+                        prompt.append("。");
+                    }
+                    
+                    // 添加玩家状态变化
+                    if (AbstractDungeon.player != null) {
+                        prompt.append("当前状态：").append(AbstractDungeon.player.currentHealth).append("/")
+                              .append(AbstractDungeon.player.maxHealth).append("血量，")
+                              .append(AbstractDungeon.player.energy.energy).append("点能量。");
+                    }
+                    
+                    // 添加怪物状态信息
+                    Map<String, BattleStateTracker.MonsterState> monsters = tracker.getMonsterStates();
+                    if (!monsters.isEmpty()) {
+                        prompt.append("敌人状态：");
+                        for (BattleStateTracker.MonsterState monster : monsters.values()) {
+                            if (!monster.isDead && !monster.isDying) {
+                                prompt.append(monster.monsterName).append("(").append(monster.currentHealth)
+                                      .append("/").append(monster.maxHealth).append("HP) ");
+                            }
                         }
                     }
+                } else {
+                    logger.info("结束回合解说：currentTurn为null，无法获取回合数据");
                 }
             }
             
@@ -919,6 +1058,45 @@ public class AIUtils {
         param.put("type", type);
         param.put("description", description);
         parameters.put(name, param);
+    }
+    
+    /**
+     * 获取意图描述
+     * @param intent 怪物意图
+     * @return 意图描述
+     */
+    private static String getIntentDescription(String intent) {
+        switch (intent) {
+            case "ATTACK":
+                return "攻击";
+            case "ATTACK_BUFF":
+                return "攻击并增益";
+            case "ATTACK_DEBUFF":
+                return "攻击并减益";
+            case "ATTACK_DEFEND":
+                return "攻击并防御";
+            case "BUFF":
+                return "增益";
+            case "DEBUFF":
+                return "减益";
+            case "DEFEND":
+                return "防御";
+            case "DEFEND_DEBUFF":
+                return "防御并减益";
+            case "ESCAPE":
+                return "逃跑";
+            case "MAGIC":
+                return "使用技能";
+            case "SLEEP":
+                return "睡眠";
+            case "STUN":
+                return "眩晕";
+            case "UNKNOWN":
+                return "未知行动";
+            case "DEBUG":
+            default:
+                return "";
+        }
     }
 
 }

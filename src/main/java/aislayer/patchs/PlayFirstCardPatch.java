@@ -38,18 +38,14 @@ public class PlayFirstCardPatch {
 
             // 检查是否需要介绍怪物
             if (ConfigPanel.introduceMonsters && isInCombat()) {
-                // 初始化战斗状态跟踪器
+                // 确保战斗状态跟踪器配置正确
                 BattleStateTracker tracker = BattleStateTracker.getInstance();
-                if (!tracker.isInBattle()) {
-                    tracker.startBattle();
-                    tracker.updateConfig(ConfigPanel.cardsPerCommentary,
-                                       ConfigPanel.introduceMonsters,
-                                       ConfigPanel.detailedMonsterIntro);
-                    tracker.startNewTurn();
-                    
-                    // 触发怪物介绍
-                    CommentaryUtils.triggerMonsterIntroduction();
-                }
+                tracker.updateConfig(ConfigPanel.cardsPerCommentary,
+                                   ConfigPanel.introduceMonsters,
+                                   ConfigPanel.detailedMonsterIntro);
+                
+                // 触发怪物介绍（通过AISlayer.intentUpdated确保只触发一次）
+                CommentaryUtils.triggerMonsterIntroduction();
             } else {
                 // 如果不介绍怪物，显示思考文本
                 String langPackDir = "aislayerResources" + File.separator + "localization" + File.separator + Settings.language.toString().toLowerCase();

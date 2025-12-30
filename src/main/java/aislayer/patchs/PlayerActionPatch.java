@@ -51,6 +51,13 @@ public class PlayerActionPatch {
                 
                 if (currentTurn == null) {
                     logger.info("检测到currentTurnData为null，初始化新回合");
+                    
+                    // 检查是否有上一回合的数据需要清理
+                    if (tracker.getTurnHistory().isEmpty() && tracker.getCurrentTurn() > 1) {
+                        logger.info("检测到可能有未清理的回合数据，尝试清理");
+                        // 这里可以添加清理逻辑，但由于currentTurnData为null，可能已经被清理了
+                    }
+                    
                     tracker.startNewTurn();
                     currentTurn = tracker.getCurrentTurnData();
                     logger.info("新回合初始化完成，当前回合数：" + tracker.getCurrentTurn());
