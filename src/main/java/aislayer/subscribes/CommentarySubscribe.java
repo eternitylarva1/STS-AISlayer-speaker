@@ -96,15 +96,17 @@ public class CommentarySubscribe {
             CommentaryUtils.clearCommentaryQueue();
             commentaryDisplay.hideCurrentCommentary();
             
-            // 重置战斗状态跟踪器
-            aislayer.utils.BattleStateTracker.getInstance().endBattle();
+            // 重置并初始化战斗状态跟踪器
+            aislayer.utils.BattleStateTracker tracker = aislayer.utils.BattleStateTracker.getInstance();
+            tracker.endBattle();
+            tracker.startBattle(); // 修复：添加战斗状态初始化
             
             // 根据配置决定是否清空历史记录
             if (!aislayer.panels.ConfigPanel.showCommentaryHistory) {
                 commentaryDisplay.clearHistory();
             }
             
-            logger.info("战斗开始，解说系统已重置");
+            logger.info("战斗开始，解说系统已重置并初始化战斗状态跟踪");
         } catch (Exception e) {
             logger.error("战斗开始时重置解说系统失败", e);
         }
