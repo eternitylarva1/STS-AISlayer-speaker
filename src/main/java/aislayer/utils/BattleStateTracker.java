@@ -59,11 +59,20 @@ public class BattleStateTracker {
      */
     public void startBattle() {
         this.inBattle = true;
-        this.currentTurn = 0;
+        this.currentTurn = 1; // 战斗开始时是第1回合
         this.turnHistory.clear();
         this.monsterStates.clear();
         this.battleStartTime = System.currentTimeMillis();
         this.battleEndTime = 0;
+        
+        // 初始化当前回合数据 - 修复：添加currentTurnData初始化
+        this.currentTurnData = new TurnData(currentTurn);
+        
+        // 记录玩家初始状态
+        if (AbstractDungeon.player != null) {
+            currentTurnData.playerEnergyStart = AbstractDungeon.player.energy.energy;
+            currentTurnData.playerHealthStart = AbstractDungeon.player.currentHealth;
+        }
         
         // 记录初始怪物状态
         if (AbstractDungeon.getCurrRoom() != null && AbstractDungeon.getCurrRoom().monsters != null) {
@@ -73,6 +82,9 @@ public class BattleStateTracker {
                 }
             }
         }
+        
+        org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger(BattleStateTracker.class.getName());
+        logger.info("战斗开始：currentTurn=" + currentTurn + ", currentTurnData已初始化");
     }
     
     /**
