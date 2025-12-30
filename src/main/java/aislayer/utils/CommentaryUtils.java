@@ -312,8 +312,10 @@ public class CommentaryUtils {
             JSONObject actionInfo = new JSONObject();
             actionInfo.put("行动类型", "怪物介绍");
             
-            // 添加怪物信息
+            // 添加怪物信息和描述
             StringBuilder monsterInfo = new StringBuilder();
+            StringBuilder monsterDescriptions = new StringBuilder();
+            
             if (AbstractDungeon.getCurrRoom() != null && AbstractDungeon.getCurrRoom().monsters != null) {
                 for (com.megacrit.cardcrawl.monsters.AbstractMonster monster : AbstractDungeon.getCurrRoom().monsters.monsters) {
                     if (monster.isDead || monster.isDying || monster.isEscaping) {
@@ -322,13 +324,21 @@ public class CommentaryUtils {
                     
                     if (monsterInfo.length() > 0) {
                         monsterInfo.append("和");
+                        monsterDescriptions.append("\n\n");
                     }
                     
+                    // 添加基本信息
                     if (ConfigPanel.detailedMonsterIntro) {
                         monsterInfo.append(String.format("%s(%d/%d HP)",
                             monster.name, monster.currentHealth, monster.maxHealth));
                     } else {
                         monsterInfo.append(monster.name);
+                    }
+                    
+                    // 添加怪物描述
+                    String description = getMonsterDescription(monster.id);
+                    if (description != null && !description.trim().isEmpty()) {
+                        monsterDescriptions.append(monster.name).append("：").append(description);
                     }
                 }
             }
@@ -339,6 +349,12 @@ public class CommentaryUtils {
             
             actionInfo.put("怪物信息", monsterInfo.toString());
             
+            // 添加怪物描述（如果有）
+            if (monsterDescriptions.length() > 0) {
+                actionInfo.put("怪物描述", monsterDescriptions.toString());
+                logger.info("已添加怪物描述信息");
+            }
+            
             // 调用AI获取解说
             logger.info("调用AI获取怪物介绍");
             AIUtils.getCommentary(actionInfo);
@@ -346,6 +362,38 @@ public class CommentaryUtils {
         } catch (Exception e) {
             logger.error("触发怪物介绍失败", e);
             showFallbackCommentary("怪物介绍");
+        }
+    }
+    
+    /**
+     * 根据怪物ID获取怪物描述
+     * @param monsterId 怪物ID
+     * @return 怪物描述，如果找不到则返回null
+     */
+    private static String getMonsterDescription(String monsterId) {
+        try {
+            String langPackDir = "aislayerResources" + File.separator + "localization" + File.separator + Settings.language.toString().toLowerCase();
+            String descriptionPath = langPackDir + File.separator + "monsterDescription.json";
+            
+            JSONObject descriptions = new JSONObject(AISlayer.loadJson(descriptionPath));
+            
+            if (descriptions.has(monsterId)) {
+                JSONObject monsterDesc = descriptions.getJSONObject(monsterId);
+                if (monsterDesc.has("TEXT")) {
+                    JSONArray textArray = monsterDesc.getJSONArray("TEXT");
+                    if (textArray.length() > 0) {
+                        // 随机选择一个描述（如果有多个）
+                        int index = (int) (Math.random() * textArray.length());
+                        return textArray.getString(index);
+                    }
+                }
+            }
+            
+            logger.info("未找到怪物ID " + monsterId + " 的描述");
+            return null;
+        } catch (Exception e) {
+            logger.error("读取怪物描述失败，怪物ID: " + monsterId, e);
+            return null;
         }
     }
     
