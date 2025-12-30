@@ -53,8 +53,8 @@ public class PlayerActionPatch {
                 logger.info("增加前牌数：" + cardsPlayedBefore);
                 
                 // 根据配置决定是否触发解说
-                // 使用增加前的牌数进行判断，确保计数准确
-                if (CommentaryUtils.shouldTriggerCommentaryByCardsWithCount(cardsPlayedBefore)) {
+                // 使用增加前的牌数+1进行判断，因为打完这张牌后总数会是cardsPlayedBefore + 1
+                if (CommentaryUtils.shouldTriggerCommentaryByCardsWithCount(cardsPlayedBefore + 1)) {
                     CommentaryUtils.triggerCommentary("打牌", card, target);
                 }
                 
