@@ -11,6 +11,8 @@ import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * 监听玩家打牌行动的Patch
@@ -22,6 +24,8 @@ import com.megacrit.cardcrawl.rooms.AbstractRoom;
         optional = true
 )
 public class PlayerActionPatch {
+    
+    private static final Logger logger = LogManager.getLogger(PlayerActionPatch.class.getName());
 
     @SpirePostfixPatch
     public static void Postfix(AbstractPlayer __instance, AbstractCard card, AbstractMonster target, int energyOnUse) {
@@ -39,15 +43,23 @@ public class PlayerActionPatch {
             // 更新战斗状态跟踪器
             BattleStateTracker tracker = BattleStateTracker.getInstance();
             if (tracker.isInBattle()) {
+                // 先获取当前计数（增加前的计数）
+                TurnData currentTurn = tracker.getCurrentTurnData();
+                int cardsPlayedBefore = currentTurn != null ? currentTurn.getPlayedCardsCount() : 0;
+                
+                // 根据配置决定是否触发解说
+                // 使用增加前的牌数进行判断，确保计数准确
+                if (CommentaryUtils.shouldTriggerCommentaryByCardsWithCount(cardsPlayedBefore)) {
+                    CommentaryUtils.triggerCommentary("打牌", card, target);
+                }
+                
+                // 然后再增加计数
                 tracker.recordCardPlay(card, target);
-            }
-            
-            // 根据配置决定是否触发解说
-            // 传入当前已打牌数，确保使用正确的牌数进行判断
-            TurnData currentTurn = tracker.getCurrentTurnData();
-            int cardsPlayed = currentTurn != null ? currentTurn.getPlayedCardsCount() : 0;
-            if (CommentaryUtils.shouldTriggerCommentaryByCardsWithCount(cardsPlayed)) {
-                CommentaryUtils.triggerCommentary("打牌", card, target);
+                
+                // 添加调试日志
+                logger.info("打牌计数更新：增加前=" + cardsPlayedBefore +
+                           ", 增加后=" + (currentTurn != null ? currentTurn.getPlayedCardsCount() : 0) +
+                           ", 卡牌=" + (card != null ? card.name : "null"));
             }
         } catch (Exception e) {
             // 静默处理异常，避免影响游戏正常进行
