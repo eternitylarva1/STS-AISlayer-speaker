@@ -39,20 +39,27 @@ public class EndTurnPatch {
             
             // 更新战斗状态跟踪器
             BattleStateTracker tracker = BattleStateTracker.getInstance();
-            if (tracker.isInBattle()) {
-                tracker.endCurrentTurn();
-            }
             
             // 根据配置决定是否触发解说
             boolean shouldTrigger = CommentaryUtils.shouldTriggerCommentaryByTurnEnd();
-            logger.info("结束回合：解说模式检查 - commentaryByCards=" + ConfigPanel.commentaryByCards + 
+            logger.info("结束回合：解说模式检查 - commentaryByCards=" + ConfigPanel.commentaryByCards +
                        ", shouldTrigger=" + shouldTrigger);
             
             if (shouldTrigger) {
                 logger.info("结束回合：触发解说");
+                // 先触发解说，再结束回合，确保解说能获取到本回合数据
                 CommentaryUtils.triggerCommentary("结束回合");
+                
+                // 解说触发后再结束回合
+                if (tracker.isInBattle()) {
+                    tracker.endCurrentTurn();
+                }
             } else {
                 logger.info("结束回合：当前配置不触发解说（可能是按牌数模式）");
+                // 即使不触发解说也要正常结束回合
+                if (tracker.isInBattle()) {
+                    tracker.endCurrentTurn();
+                }
             }
         } catch (Exception e) {
             logger.error("结束回合解说处理异常", e);
