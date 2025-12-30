@@ -137,9 +137,20 @@ public class BattleStateTracker {
      * 记录出牌
      */
     public void recordCardPlay(com.megacrit.cardcrawl.cards.AbstractCard card, AbstractMonster target) {
-        if (!inBattle || currentTurnData == null) return;
+        org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger(BattleStateTracker.class.getName());
+        logger.info("recordCardPlay调用：inBattle=" + inBattle + ", currentTurnData=" + (currentTurnData != null ? "存在" : "null"));
         
+        if (!inBattle || currentTurnData == null) {
+            logger.info("recordCardPlay提前返回：inBattle=" + inBattle + ", currentTurnData=" + (currentTurnData != null ? "存在" : "null"));
+            return;
+        }
+        
+        int beforeCount = currentTurnData.getPlayedCardsCount();
         currentTurnData.addCardPlay(card, target);
+        int afterCount = currentTurnData.getPlayedCardsCount();
+        
+        logger.info("recordCardPlay完成：增加前=" + beforeCount + ", 增加后=" + afterCount +
+                   ", 卡牌=" + (card != null ? card.name : "null"));
     }
     
     /**

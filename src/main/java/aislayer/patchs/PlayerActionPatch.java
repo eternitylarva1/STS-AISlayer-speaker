@@ -42,10 +42,15 @@ public class PlayerActionPatch {
         try {
             // 更新战斗状态跟踪器
             BattleStateTracker tracker = BattleStateTracker.getInstance();
+            logger.info("战斗状态检查：inBattle=" + tracker.isInBattle());
+            
             if (tracker.isInBattle()) {
                 // 先获取当前计数（增加前的计数）
                 TurnData currentTurn = tracker.getCurrentTurnData();
+                logger.info("当前回合数据：currentTurn=" + (currentTurn != null ? "存在" : "null"));
+                
                 int cardsPlayedBefore = currentTurn != null ? currentTurn.getPlayedCardsCount() : 0;
+                logger.info("增加前牌数：" + cardsPlayedBefore);
                 
                 // 根据配置决定是否触发解说
                 // 使用增加前的牌数进行判断，确保计数准确
@@ -55,14 +60,21 @@ public class PlayerActionPatch {
                 
                 // 然后再增加计数
                 tracker.recordCardPlay(card, target);
+                logger.info("调用recordCardPlay完成");
+                
+                // 重新获取更新后的计数
+                TurnData updatedTurn = tracker.getCurrentTurnData();
+                int cardsPlayedAfter = updatedTurn != null ? updatedTurn.getPlayedCardsCount() : 0;
                 
                 // 添加调试日志
                 logger.info("打牌计数更新：增加前=" + cardsPlayedBefore +
-                           ", 增加后=" + (currentTurn != null ? currentTurn.getPlayedCardsCount() : 0) +
+                           ", 增加后=" + cardsPlayedAfter +
                            ", 卡牌=" + (card != null ? card.name : "null"));
+            } else {
+                logger.info("不在战斗中，跳过打牌计数");
             }
         } catch (Exception e) {
-            // 静默处理异常，避免影响游戏正常进行
+            logger.error("打牌计数更新异常", e);
         }
     }
     

@@ -20,15 +20,24 @@ public class StartTurnPatch {
 
     @SpirePostfixPatch
     public static void Postfix() {
+        org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger(StartTurnPatch.class.getName());
+        logger.info("StartTurnPatch.Postfix调用");
+        
         // 检查是否进入战斗房间
-        if (!isInCombat()) {
+        boolean inCombat = isInCombat();
+        logger.info("战斗状态检查：" + inCombat);
+        
+        if (!inCombat) {
             return;
         }
         
         try {
             // 初始化战斗状态跟踪器
             BattleStateTracker tracker = BattleStateTracker.getInstance();
+            logger.info("BattleStateTracker状态：inBattle=" + tracker.isInBattle());
+            
             if (!tracker.isInBattle()) {
+                logger.info("开始新战斗");
                 tracker.startBattle();
                 tracker.updateConfig(ConfigPanel.cardsPerCommentary,
                                    ConfigPanel.introduceMonsters,
@@ -36,10 +45,12 @@ public class StartTurnPatch {
             }
             
             // 开始新回合
+            logger.info("开始新回合");
             tracker.startNewTurn();
+            logger.info("新回合开始完成，当前回合数：" + tracker.getCurrentTurn());
             
         } catch (Exception e) {
-            // 静默处理异常，避免影响游戏正常进行
+            logger.error("StartTurnPatch异常", e);
         }
     }
     
