@@ -45,9 +45,16 @@ public class PlayerActionPatch {
             logger.info("战斗状态检查：inBattle=" + tracker.isInBattle());
             
             if (tracker.isInBattle()) {
-                // 先获取当前计数（增加前的计数）
+                // 检查是否需要初始化新回合
                 TurnData currentTurn = tracker.getCurrentTurnData();
                 logger.info("当前回合数据：currentTurn=" + (currentTurn != null ? "存在" : "null"));
+                
+                if (currentTurn == null) {
+                    logger.info("检测到currentTurnData为null，初始化新回合");
+                    tracker.startNewTurn();
+                    currentTurn = tracker.getCurrentTurnData();
+                    logger.info("新回合初始化完成，当前回合数：" + tracker.getCurrentTurn());
+                }
                 
                 int cardsPlayedBefore = currentTurn != null ? currentTurn.getPlayedCardsCount() : 0;
                 logger.info("增加前牌数：" + cardsPlayedBefore);
