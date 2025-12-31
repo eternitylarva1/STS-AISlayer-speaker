@@ -37,3 +37,9 @@ build/
 ### Mac OS ###
 .DS_Store
 /.roo/
+/sendToDevs/logs/SlayTheSpire.log
+/sendToDevs/logs/SlayTheSpire_202512311828_1.log.zip
+/sendToDevs/logs/SlayTheSpire_202512311835_1.log.zip
+/sendToDevs/logs/SlayTheSpire_202512311851_1.log.zip
+/sendToDevs/logs/SlayTheSpire_202512311855_1.log.zip
+/sendToDevs/logs/SlayTheSpire_202512311856_1.log.zip

@@ -234,7 +234,7 @@ public class CommentaryDisplay {
         ArrayList<String> historyCopy = new ArrayList<>(commentaryHistory);
         
         // 历史记录直接从当前位置开始显示，不再向下偏移
-        float historyY = y;
+        float historyY = Settings.HEIGHT-110*Settings.scale;
         float historyHeight = 25.0f * Settings.scale;
         float historyWidth = width + 100.0f * Settings.scale; // 稍微宽一点
         float maxDisplay = Math.min(8, historyCopy.size()); // 最多显示8条
