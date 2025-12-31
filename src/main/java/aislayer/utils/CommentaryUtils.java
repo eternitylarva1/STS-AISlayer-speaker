@@ -142,6 +142,14 @@ public class CommentaryUtils {
         // 输出到控制台，方便调试
         logger.info("=== AI解说 === " + formattedCommentary);
         
+        // 添加到解说历史记录
+        try {
+            aislayer.ui.CommentaryDisplay.getInstance().showCommentary(formattedCommentary);
+            logger.info("解说内容已添加到历史记录");
+        } catch (Exception e) {
+            logger.error("添加解说到历史记录失败", e);
+        }
+        
         // 添加到队列
         commentaryQueue.add(formattedCommentary);
         

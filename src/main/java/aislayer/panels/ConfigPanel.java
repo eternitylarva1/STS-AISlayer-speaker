@@ -37,7 +37,7 @@ public class ConfigPanel extends EasyConfigPanel {
     public static boolean commentaryEnabled = true;
     public static int commentaryFrequency = 1;
     public static String commentaryStyle = "幽默";
-    public static boolean showCommentaryHistory = false;
+    public static boolean showCommentaryHistory = true;
     public static int commentaryTimeout = 10; // API调用超时时间（秒）
     
     // 新增解说增强配置

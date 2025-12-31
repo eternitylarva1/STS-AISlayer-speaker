@@ -1,5 +1,6 @@
 package aislayer.patchs;
 
+import aislayer.subscribes.CommentarySubscribe;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePatch;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePostfixPatch;
 import com.megacrit.cardcrawl.actions.AbstractGameAction;
@@ -43,6 +44,13 @@ public class ExecuteSubscribePatch {
             } else {
                 // logger.info("为啥没有行动?");
             }
+        }
+        
+        // 更新解说系统
+        try {
+            CommentarySubscribe.update();
+        } catch (Exception e) {
+            logger.error("更新解说系统失败", e);
         }
     }
 }
