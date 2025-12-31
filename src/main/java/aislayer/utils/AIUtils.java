@@ -435,6 +435,23 @@ public class AIUtils {
                     prompt.append("。");
                 }
                 
+                // 添加怪物描述和关键词信息（检查当前打出的牌是否有怪物目标）
+                if (!currentTurn.playedCards.isEmpty()) {
+                    TurnData.CardPlayRecord lastCard = currentTurn.playedCards.get(currentTurn.playedCards.size() - 1);
+                    if (lastCard.targetMonsterId != null && !lastCard.targetMonsterId.isEmpty()) {
+                        String monsterDesc = getMonsterDescription(lastCard.targetMonsterId);
+                        if (monsterDesc != null && !monsterDesc.trim().isEmpty()) {
+                            prompt.append("目标怪物").append(lastCard.targetMonsterName).append("详情：").append(monsterDesc).append("。");
+                        }
+                        
+                        // 添加怪物关键词
+                        String monsterKeyword = getMonsterKeywords(lastCard.targetMonsterId);
+                        if (monsterKeyword != null && !monsterKeyword.trim().isEmpty()) {
+                            prompt.append("关键词：").append(monsterKeyword).append("。");
+                        }
+                    }
+                }
+                
                 prompt.append("这是本回合第").append(currentTurn.getPlayedCardsCount()).append("张牌。");
                 
                 // 添加怪物意图信息
@@ -519,6 +536,20 @@ public class AIUtils {
                             // 添加目标信息
                             if (cardObj.has("targetMonster")) {
                                 prompt.append("(攻击").append(cardObj.getString("targetMonster")).append(")");
+                                
+                                // 添加怪物描述信息
+                                if (cardObj.has("targetMonsterId") && !cardObj.getString("targetMonsterId").isEmpty()) {
+                                    String monsterDesc = getMonsterDescription(cardObj.getString("targetMonsterId"));
+                                    if (monsterDesc != null && !monsterDesc.trim().isEmpty()) {
+                                        prompt.append("【").append(cardObj.getString("targetMonster")).append("详情：").append(monsterDesc).append("】");
+                                    }
+                                    
+                                    // 添加怪物关键词
+                                    String monsterKeyword = getMonsterKeywords(cardObj.getString("targetMonsterId"));
+                                    if (monsterKeyword != null && !monsterKeyword.trim().isEmpty()) {
+                                        prompt.append("关键词：").append(monsterKeyword).append("。");
+                                    }
+                                }
                             }
                         }
                         prompt.append("。");
@@ -607,6 +638,16 @@ public class AIUtils {
                                 prompt.append("、");
                             }
                             prompt.append(cardRecord.cardName);
+                            
+                            // 添加怪物描述信息
+                            if (cardRecord.targetMonsterId != null && !cardRecord.targetMonsterId.isEmpty()) {
+                                String monsterDesc = getMonsterDescription(cardRecord.targetMonsterId);
+                                if (monsterDesc != null && !monsterDesc.trim().isEmpty()) {
+                                    prompt.append("(攻击").append(cardRecord.targetMonsterName).append("【详情：").append(monsterDesc).append("】)");
+                                } else {
+                                    prompt.append("(攻击").append(cardRecord.targetMonsterName).append(")");
+                                }
+                            }
                         }
                         prompt.append("。");
                     }
@@ -1103,6 +1144,76 @@ public class AIUtils {
             case "DEBUG":
             default:
                 return "";
+        }
+    }
+
+    /**
+     * 获取怪物关键词（从monsterKeywords.json文件）
+     * @param monsterId 怪物ID
+     * @return 怪物关键词，如果找不到或概率不满足则返回null
+     */
+    private static String getMonsterKeywords(String monsterId) {
+        try {
+            String langPackDir = "aislayerResources" + java.io.File.separator + "localization" + java.io.File.separator + com.megacrit.cardcrawl.core.Settings.language.toString().toLowerCase();
+            String keywordsPath = langPackDir + java.io.File.separator + "monsterKeywords.json";
+            
+            JSONObject keywordsData = new JSONObject(aislayer.AISlayer.loadJson(keywordsPath));
+            
+            if (keywordsData.has(monsterId)) {
+                JSONObject monsterKeywords = keywordsData.getJSONObject(monsterId);
+                if (monsterKeywords.has("keywords")) {
+                    JSONArray keywordsArray = monsterKeywords.getJSONArray("keywords");
+                    if (keywordsArray.length() > 0) {
+                        // 检查是否触发关键词（基于配置的概率）
+                        if (Math.random() < aislayer.panels.ConfigPanel.keywordTriggerProbability) {
+                            // 随机选择一个关键词（如果有多个）
+                            int index = (int) (Math.random() * keywordsArray.length());
+                            return keywordsArray.getString(index);
+                        } else {
+                            logger.info("关键词触发概率检查未通过，概率: " + aislayer.panels.ConfigPanel.keywordTriggerProbability + ", 随机数: " + Math.random());
+                            return null;
+                        }
+                    }
+                }
+            }
+            
+            logger.info("未找到怪物ID " + monsterId + " 的关键词");
+            return null;
+        } catch (Exception e) {
+            logger.error("读取怪物关键词失败，怪物ID: " + monsterId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取怪物描述（从CommentaryUtils复制的方法）
+     * @param monsterId 怪物ID
+     * @return 怪物描述，如果找不到则返回null
+     */
+    private static String getMonsterDescription(String monsterId) {
+        try {
+            String langPackDir = "aislayerResources" + java.io.File.separator + "localization" + java.io.File.separator + com.megacrit.cardcrawl.core.Settings.language.toString().toLowerCase();
+            String descriptionPath = langPackDir + java.io.File.separator + "monsterDescription.json";
+            
+            JSONObject descriptions = new JSONObject(aislayer.AISlayer.loadJson(descriptionPath));
+            
+            if (descriptions.has(monsterId)) {
+                JSONObject monsterDesc = descriptions.getJSONObject(monsterId);
+                if (monsterDesc.has("TEXT")) {
+                    JSONArray textArray = monsterDesc.getJSONArray("TEXT");
+                    if (textArray.length() > 0) {
+                        // 随机选择一个描述（如果有多个）
+                        int index = (int) (Math.random() * textArray.length());
+                        return textArray.getString(index);
+                    }
+                }
+            }
+            
+            logger.info("未找到怪物ID " + monsterId + " 的描述");
+            return null;
+        } catch (Exception e) {
+            logger.error("读取怪物描述失败，怪物ID: " + monsterId, e);
+            return null;
         }
     }
 

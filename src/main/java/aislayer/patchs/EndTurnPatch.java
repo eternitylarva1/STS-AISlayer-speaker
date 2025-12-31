@@ -84,6 +84,9 @@ public class EndTurnPatch {
                                 if (cardRecord.targetMonsterName != null) {
                                     cardObj.put("targetMonster", cardRecord.targetMonsterName);
                                 }
+                                if (cardRecord.targetMonsterId != null) {
+                                    cardObj.put("targetMonsterId", cardRecord.targetMonsterId);
+                                }
                                 playedCardsArray.put(cardObj);
                             }
                         }

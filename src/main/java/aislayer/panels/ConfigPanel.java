@@ -51,6 +51,9 @@ public class ConfigPanel extends EasyConfigPanel {
     public static float voiceVolume = 0.8f; // 语音音量 (0.0 - 1.0)
     public static boolean autoClearVoiceCache = false; // 是否自动清理语音缓存
     
+    // 关键词配置
+    public static float keywordTriggerProbability = 0.1f; // 关键词触发概率，默认0.1
+    
     /**
      * 检查是否为按牌数解说模式
      * @return 是否为按牌数解说模式
@@ -65,6 +68,23 @@ public class ConfigPanel extends EasyConfigPanel {
      */
     public static boolean isByTurnEndMode() {
         return !commentaryByCards;
+    }
+    
+    /**
+     * 设置关键词触发概率
+     * @param probability 概率值 (0.0 - 1.0)
+     */
+    public static void setKeywordTriggerProbability(float probability) {
+        // 确保概率在 0.0 - 1.0 范围内
+        keywordTriggerProbability = Math.max(0.0f, Math.min(1.0f, probability));
+    }
+    
+    /**
+     * 获取关键词触发概率
+     * @return 概率值 (0.0 - 1.0)
+     */
+    public static float getKeywordTriggerProbability() {
+        return keywordTriggerProbability;
     }
 
     public ConfigPanel() {
