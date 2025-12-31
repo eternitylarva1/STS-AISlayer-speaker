@@ -1,0 +1,23 @@
+14:01:12.724 INFO test.KeywordProbabilityTest> 开始测试关键词触发概率范围限制
+14:01:12.725 INFO test.KeywordProbabilityTest> 测试值: 0.0
+14:01:12.729 INFO test.KeywordProbabilityTest> 输入值: 0.0, 实际值: 0.0, 范围正确: true
+14:01:12.729 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 测试值: 0.5
+14:01:12.730 INFO test.KeywordProbabilityTest> 输入值: 0.5, 实际值: 0.5, 范围正确: true
+14:01:12.730 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 测试值: 1.0
+14:01:12.730 INFO test.KeywordProbabilityTest> 输入值: 1.0, 实际值: 1.0, 范围正确: true
+14:01:12.730 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 测试值: -0.5
+14:01:12.730 INFO test.KeywordProbabilityTest> 输入值: -0.5, 实际值: 0.0, 范围正确: true
+14:01:12.730 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 测试值: 1.5
+14:01:12.730 INFO test.KeywordProbabilityTest> 输入值: 1.5, 实际值: 1.0, 范围正确: true
+14:01:12.730 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 测试值: -1.0
+14:01:12.730 INFO test.KeywordProbabilityTest> 输入值: -1.0, 实际值: 0.0, 范围正确: true
+14:01:12.730 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 测试值: 2.0
+14:01:12.730 INFO test.KeywordProbabilityTest> 输入值: 2.0, 实际值: 1.0, 范围正确: true
+14:01:12.730 INFO test.KeywordProbabilityTest> ? 概率值范围限制正常
+14:01:12.730 INFO test.KeywordProbabilityTest> 关键词触发概率范围限制测试完成

@@ -12,7 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 
+import com.badlogic.gdx.graphics.Color;
 import com.megacrit.cardcrawl.actions.unique.WhirlwindAction;
+import com.megacrit.cardcrawl.helpers.FontHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -37,6 +39,7 @@ import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.rooms.TreasureRoom;
 import com.megacrit.cardcrawl.ui.campfire.AbstractCampfireOption;
 import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
+import com.megacrit.cardcrawl.vfx.SpeechBubble; // 添加SpeechBubble导入
 import com.megacrit.cardcrawl.vfx.combat.LightBulbEffect;
 
 import aislayer.actions.AIEndTurnAction;
@@ -54,6 +57,9 @@ public class AIUtils {
     public static JSONArray messagesArray = new JSONArray();
 
     public static Hitbox lockedHoveredHitbox = null;
+    
+    // 标记是否正在请求解说
+    public static boolean isRequestingCommentary = false;
 
     public static void action (JSONObject info) {
 
@@ -256,16 +262,39 @@ public class AIUtils {
     public static void getCommentary(JSONObject actionInfo) {
         Thread thread = new Thread(() -> {
             try {
+                // 显示请求解说中的文字
+                showRequestingCommentary();
+                
                 String commentary = callCommentaryAPI(actionInfo);
                 if (commentary != null && !commentary.trim().isEmpty()) {
                     // 使用CommentaryUtils显示解说（Effect方式）
                     CommentaryUtils.showCommentary(commentary);
+                } else {
+                    // 如果返回null，显示请求失败或超时的消息
+                    logger.info("AI请求失败或超时，不显示语音");
                 }
             } catch (Exception e) {
                 logger.error("获取解说失败", e);
+            } finally {
+                // 确保移除请求中的文字
+                hideRequestingCommentary();
             }
         });
         thread.start();
+    }
+    
+    /**
+     * 显示请求解说中的文字
+     */
+    private static void showRequestingCommentary() {
+        isRequestingCommentary = true;
+    }
+    
+    /**
+     * 隐藏请求解说中的文字
+     */
+    private static void hideRequestingCommentary() {
+        isRequestingCommentary = false;
     }
 
     /**
@@ -302,7 +331,7 @@ public class AIUtils {
             
         } catch (Exception e) {
             logger.error("构建解说请求失败", e);
-            return "精彩的行动！";
+            return null; // 不返回语音文本
         }
         
         logger.info("请求AI解说...");
@@ -326,7 +355,7 @@ public class AIUtils {
             os.write(input, 0, input.length);
         } catch (IOException e) {
             logger.error("发送解说请求失败", e);
-            return "精彩的行动！";
+            return null; // 不返回语音文本
         }
         
         // 获取响应
@@ -357,22 +386,22 @@ public class AIUtils {
                     return commentary;
                 } catch (Exception e) {
                     logger.error("解析解说响应失败", e);
-                    return "精彩的行动！";
+                    return null; // 不返回语音文本
                 }
             } else {
                 logger.error("解说API调用失败，响应码: " + responseCode);
-                return "精彩的行动！";
+                return null; // 不返回语音文本
             }
         } catch (SocketTimeoutException e) {
             long responseReceivedTime = System.currentTimeMillis();
             long requestDuration = responseReceivedTime - requestStartTime;
             logger.info("AI请求超时，耗时: " + requestDuration + "ms");
-            return "精彩的行动！";
+            return null; // 不返回语音文本
         } catch (Exception e) {
             long responseReceivedTime = System.currentTimeMillis();
             long requestDuration = responseReceivedTime - requestStartTime;
             logger.error("获取解说响应时发生错误，耗时: " + requestDuration + "ms", e);
-            return "精彩的行动！";
+            return null; // 不返回语音文本
         }
     }
 
@@ -402,6 +431,15 @@ public class AIUtils {
             // 添加怪物描述信息
             if (actionInfo.has("怪物描述")) {
                 prompt.append("怪物详情：").append(actionInfo.getString("怪物描述")).append("。");
+            }
+            
+            // 添加怪物关键词（在怪物介绍时也触发关键词）
+            if (actionInfo.has("怪物ID")) {
+                String monsterId = actionInfo.getString("怪物ID");
+                String monsterKeyword = getMonsterKeywords(monsterId);
+                if (monsterKeyword != null && !monsterKeyword.trim().isEmpty()) {
+                    prompt.append("关键词：").append(monsterKeyword).append("。");
+                }
             }
             
             prompt.append("噶人们，准备迎接挑战！请用主播口吻介绍这个敌人：");
@@ -1154,33 +1192,62 @@ public class AIUtils {
      */
     private static String getMonsterKeywords(String monsterId) {
         try {
+            logger.info("=== 关键词触发调试开始 ===");
+            logger.info("怪物ID: " + monsterId);
+            
             String langPackDir = "aislayerResources" + java.io.File.separator + "localization" + java.io.File.separator + com.megacrit.cardcrawl.core.Settings.language.toString().toLowerCase();
             String keywordsPath = langPackDir + java.io.File.separator + "monsterKeywords.json";
             
             JSONObject keywordsData = new JSONObject(aislayer.AISlayer.loadJson(keywordsPath));
+            logger.info("关键词文件加载成功，包含怪物数量: " + keywordsData.length());
             
             if (keywordsData.has(monsterId)) {
+                logger.info("找到怪物ID " + monsterId + " 的关键词配置");
                 JSONObject monsterKeywords = keywordsData.getJSONObject(monsterId);
                 if (monsterKeywords.has("keywords")) {
                     JSONArray keywordsArray = monsterKeywords.getJSONArray("keywords");
+                    logger.info("怪物 " + monsterId + " 的关键词数量: " + keywordsArray.length());
+                    
                     if (keywordsArray.length() > 0) {
                         // 检查是否触发关键词（基于配置的概率）
-                        if (Math.random() < aislayer.panels.ConfigPanel.keywordTriggerProbability) {
+                        // 确保概率值在0-1范围内
+                        float probability = aislayer.panels.ConfigPanel.getKeywordTriggerProbability();
+                        probability = Math.max(0.0f, Math.min(1.0f, probability));
+                        
+                        logger.info("配置的关键词触发概率: " + probability);
+                        
+                        double randomValue = Math.random();
+                        logger.info("生成的随机数: " + randomValue);
+                        
+                        if (randomValue < probability) {
                             // 随机选择一个关键词（如果有多个）
                             int index = (int) (Math.random() * keywordsArray.length());
-                            return keywordsArray.getString(index);
+                            String selectedKeyword = keywordsArray.getString(index);
+                            logger.info("关键词触发成功！选择的关键词: " + selectedKeyword);
+                            logger.info("=== 关键词触发调试结束 ===");
+                            return selectedKeyword;
                         } else {
-                            logger.info("关键词触发概率检查未通过，概率: " + aislayer.panels.ConfigPanel.keywordTriggerProbability + ", 随机数: " + Math.random());
+                            logger.info("关键词触发概率检查未通过，概率: " + probability + ", 随机数: " + randomValue);
+                            logger.info("=== 关键词触发调试结束 ===");
                             return null;
                         }
+                    } else {
+                        logger.info("怪物 " + monsterId + " 的关键词数组为空");
                     }
+                } else {
+                    logger.info("怪物 " + monsterId + " 没有keywords字段");
                 }
+            } else {
+                logger.info("未找到怪物ID " + monsterId + " 的关键词配置");
+                // 列出所有可用的怪物ID供调试
+                logger.info("可用的怪物ID列表: " + keywordsData.keySet().toString());
             }
             
-            logger.info("未找到怪物ID " + monsterId + " 的关键词");
+            logger.info("=== 关键词触发调试结束 ===");
             return null;
         } catch (Exception e) {
             logger.error("读取怪物关键词失败，怪物ID: " + monsterId, e);
+            logger.info("=== 关键词触发调试结束（异常） ===");
             return null;
         }
     }

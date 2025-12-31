@@ -315,6 +315,7 @@ public class CommentaryUtils {
             // 添加怪物信息和描述
             StringBuilder monsterInfo = new StringBuilder();
             StringBuilder monsterDescriptions = new StringBuilder();
+            String firstMonsterId = null; // 记录第一个怪物的ID，用于关键词
             
             if (AbstractDungeon.getCurrRoom() != null && AbstractDungeon.getCurrRoom().monsters != null) {
                 for (com.megacrit.cardcrawl.monsters.AbstractMonster monster : AbstractDungeon.getCurrRoom().monsters.monsters) {
@@ -325,6 +326,11 @@ public class CommentaryUtils {
                     if (monsterInfo.length() > 0) {
                         monsterInfo.append("和");
                         monsterDescriptions.append("\n\n");
+                    }
+                    
+                    // 记录第一个怪物的ID
+                    if (firstMonsterId == null) {
+                        firstMonsterId = monster.id;
                     }
                     
                     // 添加基本信息
@@ -348,6 +354,12 @@ public class CommentaryUtils {
             }
             
             actionInfo.put("怪物信息", monsterInfo.toString());
+            
+            // 添加怪物ID（用于关键词）
+            if (firstMonsterId != null) {
+                actionInfo.put("怪物ID", firstMonsterId);
+                logger.info("已添加怪物ID: " + firstMonsterId);
+            }
             
             // 添加怪物描述（如果有）
             if (monsterDescriptions.length() > 0) {

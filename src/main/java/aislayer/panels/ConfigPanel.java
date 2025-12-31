@@ -97,6 +97,12 @@ public class ConfigPanel extends EasyConfigPanel {
         // 设置语音音量范围 (0.0 - 1.0)
         setNumberRange("voiceVolume", 0.0f, 1.0f);
         
+        // 设置关键词触发概率范围 (0.0 - 1.0)
+        setNumberRange("keywordTriggerProbability", 0.0f, 1.0f);
+        
+        // 确保初始值在有效范围内
+        setKeywordTriggerProbability(keywordTriggerProbability);
+        
         setPadding(30.0F);
     }
     
