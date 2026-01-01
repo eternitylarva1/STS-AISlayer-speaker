@@ -238,7 +238,7 @@ public class CommentaryDisplay {
                     x + padding, historyY + maxDisplay * historyHeight - padding, Color.GOLD);
         }
         
-        // 绘制历史记录文本
+        // 绘制历史记录文本（最新的在最下面）
         for (int i = 0; i < maxDisplay; i++) {
             String historyText = historyCopy.get(i);
             if (historyText == null) {
@@ -249,10 +249,11 @@ public class CommentaryDisplay {
                 historyText = historyText.substring(0, 47) + "...";
             }
             
-            float textY = historyY + (maxDisplay - i - 1) * historyHeight + padding;
+            // Y坐标计算：索引0（最新）显示在最下面
+            float textY = historyY + i * historyHeight + padding;
             // 确保字体不为null且文本不为空
             if (font != null && !historyText.isEmpty()) {
-                FontHelper.renderFontLeftTopAligned(sb, font, (i + 1) + ". " + historyText,
+                FontHelper.renderFontLeftTopAligned(sb, font, ((int)maxDisplay - i) + ". " + historyText,
                         x + padding, textY, historyColor);
             }
         }

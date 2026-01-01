@@ -50,7 +50,7 @@ public class ConfigPanel extends EasyConfigPanel {
     public static boolean voiceEnabled = true; // 是否启用语音解说
     public static float voiceVolume = 0.8f; // 语音音量 (0.0 - 1.0)
     public static boolean autoClearVoiceCache = false; // 是否自动清理语音缓存
-    public static String voiceApiToken = ""; // 语音API Token
+    public static String voiceApiToken = "your-token-here"; // 语音API Token
     
     // 关键词配置
     public static float keywordTriggerProbability = 0.1f; // 关键词触发概率，默认0.1
@@ -90,11 +90,6 @@ public class ConfigPanel extends EasyConfigPanel {
 
     public ConfigPanel() {
         super("aislayer", getUIStrings(), "config");
-        setupTextField("apiUrl_1", 500, 100);
-        setupTextField("apiKey_1", 750, 100);
-        setupTextField("apiUrl_2", 500, 100);
-        setupTextField("apiKey_2", 750, 100);
-        setupTextField("voiceApiToken", 750, 100);
         
         // 设置语音音量范围 (0.0 - 1.0)
         setNumberRange("voiceVolume", 0.0f, 1.0f);

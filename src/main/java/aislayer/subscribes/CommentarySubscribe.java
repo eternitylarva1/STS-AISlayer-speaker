@@ -2,7 +2,10 @@ package aislayer.subscribes;
 
 import aislayer.ui.CommentaryDisplay;
 import aislayer.utils.CommentaryUtils;
+import aislayer.utils.VoiceGenerator;
+import aislayer.panels.ConfigPanel;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
@@ -78,10 +81,15 @@ public class CommentarySubscribe {
     }
     
     /**
-     * 检查快捷键（已移除所有快捷键）
+     * 检查快捷键
      */
     private static void checkHotkeys() {
-        // 所有快捷键已移除，按用户要求
+        // T键：切换语音解说
+        if (Gdx.input.isKeyJustPressed(Input.Keys.T)) {
+            VoiceGenerator.voiceEnabled = !VoiceGenerator.voiceEnabled;
+            ConfigPanel.voiceEnabled = VoiceGenerator.voiceEnabled;
+            logger.info("语音解说已" + (VoiceGenerator.voiceEnabled ? "启用" : "关闭"));
+        }
     }
     
     /**

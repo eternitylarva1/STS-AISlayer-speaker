@@ -27,7 +27,8 @@
       "detailedMonsterIntro": "Detailed Monster Intro (Check) or Simple Intro (Uncheck)",
       "voiceEnabled": "Enable voice commentary",
       "voiceVolume": "Voice volume (0.0-1.0)",
-      "autoClearVoiceCache": "Auto clear voice cache"
+      "autoClearVoiceCache": "Auto clear voice cache",
+      "voiceApiToken": "Voice API Token (apicx.asia)"
     }
   }
 }
