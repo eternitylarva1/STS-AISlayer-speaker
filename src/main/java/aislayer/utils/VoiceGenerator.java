@@ -26,8 +26,8 @@ public class VoiceGenerator {
     public static final Logger logger = LogManager.getLogger(VoiceGenerator.class.getName());
     
     // 曼波API配置
-    private static final String API_BASE_URL = "https://api.milorapart.top/apis/mbAIsc";
-    private static final String DEFAULT_FORMAT = "wav"; // 改为WAV格式，避免MP3兼容性问题
+    private static final String API_BASE_URL = "https://apicx.asia/api/get_tts_audio";
+    private static final String VOICE_MATERIAL = "曼波"; // 语音材质
     
     // 语音缓存目录
     private static final String CACHE_DIR = "voice_cache";
@@ -117,11 +117,20 @@ public class VoiceGenerator {
      */
     private static File generateVoice(String text) {
         try {
+            // 获取API Token
+            String token = ConfigPanel.voiceApiToken;
+            if (token == null || token.trim().isEmpty()) {
+                logger.warn("语音API Token未配置，跳过语音生成");
+                return null;
+            }
+            
             // 构建请求URL
             String encodedText = URLEncoder.encode(text, "UTF-8");
-            String requestUrl = String.format("%s?text=%s&format=%s", API_BASE_URL, encodedText, DEFAULT_FORMAT);
+            String encodedMaterial = URLEncoder.encode(VOICE_MATERIAL, "UTF-8");
+            String requestUrl = String.format("%s?text=%s&material=%s&token=%s",
+                API_BASE_URL, encodedText, encodedMaterial, token);
             
-            logger.info("请求曼波API: " + requestUrl);
+            logger.info("请求语音API: " + API_BASE_URL);
             
             // 发送HTTP请求
             URL url = new URL(requestUrl);
@@ -134,7 +143,7 @@ public class VoiceGenerator {
             int responseCode = connection.getResponseCode();
             if (responseCode == 200) {
                 // 读取响应
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
                 StringBuilder response = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -145,7 +154,8 @@ public class VoiceGenerator {
                 // 解析JSON响应
                 JSONObject jsonResponse = new JSONObject(response.toString());
                 if (jsonResponse.getInt("code") == 200) {
-                    String audioUrl = jsonResponse.getString("url");
+                    JSONObject data = jsonResponse.getJSONObject("data");
+                    String audioUrl = data.getString("audio_url");
                     logger.info("获取到音频URL: " + audioUrl);
                     
                     // 下载音频文件
@@ -160,7 +170,7 @@ public class VoiceGenerator {
             connection.disconnect();
             
         } catch (Exception e) {
-            logger.error("调用曼波API失败", e);
+            logger.error("调用语音API失败", e);
         }
         
         return null;

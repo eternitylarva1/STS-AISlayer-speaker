@@ -27,7 +27,8 @@
       "detailedMonsterIntro": "详细怪物介绍（勾选）或简单介绍（不勾选）",
       "voiceEnabled": "启用语音解说",
       "voiceVolume": "语音音量 (0.0-1.0)",
-      "autoClearVoiceCache": "自动清理语音缓存"
+      "autoClearVoiceCache": "自动清理语音缓存",
+      "voiceApiToken": "语音API Token (apicx.asia)"
     }
   }
 }

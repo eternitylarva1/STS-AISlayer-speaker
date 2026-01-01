@@ -166,12 +166,6 @@ public class CommentaryDisplay {
         if (currentCommentary == null) {
             currentCommentary = "";
         }
-        
-        // 绘制当前解说
-        if (!currentCommentary.isEmpty() && displayTimer > 0) {
-            renderCurrentCommentary(sb);
-        }
-        
         // 绘制历史记录（根据配置决定）
         try {
             if (aislayer.panels.ConfigPanel.showCommentaryHistory) {
@@ -238,19 +232,6 @@ public class CommentaryDisplay {
         float historyHeight = 25.0f * Settings.scale;
         float historyWidth = width + 100.0f * Settings.scale; // 稍微宽一点
         float maxDisplay = Math.min(8, historyCopy.size()); // 最多显示8条
-        
-        // 绘制历史记录背景
-        Color historyBgColor = new Color(0.1f, 0.1f, 0.1f, 0.6f);
-        sb.setColor(historyBgColor);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY, historyWidth, maxDisplay * historyHeight);
-        
-        // 绘制历史记录边框
-        sb.setColor(Color.LIGHT_GRAY.r, Color.LIGHT_GRAY.g, Color.LIGHT_GRAY.b, 0.8f);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY, historyWidth, 1.0f * Settings.scale);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY + maxDisplay * historyHeight - 1.0f * Settings.scale, historyWidth, 1.0f * Settings.scale);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, historyY, 1.0f * Settings.scale, maxDisplay * historyHeight);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x + historyWidth - 1.0f * Settings.scale, historyY, 1.0f * Settings.scale, maxDisplay * historyHeight);
-        
         // 绘制标题（确保字体不为null）
         if (font != null) {
             FontHelper.renderFontLeftTopAligned(sb, font, "解说历史记录:",
